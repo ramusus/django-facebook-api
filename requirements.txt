@@ -1,4 +1,4 @@
 django
 django-annoying
 django-oauth-tokens>=0.2.2
-pyfacegraph
+-e git+https://github.com/iplatform/pyFaceGraph#egg=pyfacegraph
