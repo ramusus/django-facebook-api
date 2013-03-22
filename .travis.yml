@@ -4,7 +4,7 @@ python:
 env:
   - DJANGO=1.4
 install:
-  - pip install -r requirements.txt --use-mirrors
+  - pip install -qr requirements.txt --use-mirrors
   - pip install -q Django>=$DJANGO --use-mirrors
   - pip install -q coveralls --use-mirrors
   - pip install -q . --use-mirrors
