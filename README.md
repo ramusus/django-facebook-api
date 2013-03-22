@@ -13,6 +13,7 @@ Add into `settings.py` lines:
     INSTALLED_APPS = (
         ...
         'oauth_tokens',
+        'facebook-api',
     )
 
     # oauth-tokens settings
