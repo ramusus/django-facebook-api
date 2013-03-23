@@ -1,5 +1,0 @@
-django
-django-annoying
-django-oauth-tokens>=0.2.2
--e git+https://github.com/iplatform/pyFaceGraph#egg=pyfacegraph-0.0.36
-python-dateutil>=1.5
