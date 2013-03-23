@@ -115,7 +115,8 @@ class FacebookGraphModel(models.Model):
                     value = ','.join([unicode(v) for v in value])
 
                 elif isinstance(field, (models.CharField, models.TextField)) and value:
-                    value = value.strip()
+                    if isinstance(value, str):
+                        value = value.strip()
 
                 setattr(self, key, value)
 
