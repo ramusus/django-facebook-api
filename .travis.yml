@@ -6,7 +6,7 @@ env:
 install:
   - pip install -q Django>=$DJANGO --use-mirrors
   - pip install -q coveralls --use-mirrors
-  - pip install . --use-mirrors
+  - pip install -q . --use-mirrors
 script:
   - coverage run --source=facebook_api quicktest.py facebook_api
 after_success:
