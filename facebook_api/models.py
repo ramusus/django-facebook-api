@@ -7,6 +7,7 @@ from utils import graph
 import fields
 import dateutil.parser
 import logging
+import re
 
 log = logging.getLogger('facebook_api.models')
 
@@ -24,6 +25,22 @@ class FacebookGraphManager(models.Manager):
             self.remote_pk = (self.remote_pk,)
 
         super(FacebookGraphManager, self).__init__(*args, **kwargs)
+
+    def get_by_url(self, url):
+        '''
+        Return object by url
+        '''
+        m = re.findall(r'(?:https?://)?(?:www\.)?facebook\.com/(.+)/?', url)
+        if not len(m):
+            raise ValueError("Url should be started with http://facebook.com/")
+
+        return self.get_by_slug(m[0])
+
+    def get_by_slug(self, slug):
+        '''
+        Return object by slug
+        '''
+        return self.model.remote.fetch(slug)
 
     def get_or_create_from_instance(self, instance):
 
