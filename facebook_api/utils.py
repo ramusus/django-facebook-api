@@ -1,6 +1,11 @@
 from oauth_tokens.models import AccessToken
 from facegraph import Graph, GraphException
 from datetime import datetime
+import logging
+
+__all__ = ['api_call']
+
+log = logging.getLogger('facebook_api')
 
 def get_tokens():
     '''
@@ -35,5 +40,14 @@ def graph(method, **kwargs):
         if e.code == 190:
             update_token()
             return graph(method, **kwargs)
+        elif 'An unexpected error has occurred. Please retry your request later' in str(e):
+            sleep(1)
+            return graph(method, **kwargs)
         else:
             raise e
+    except JSONDecodeError, e:
+        log.error("JSONDecodeError error: %s registered while executing method %s with params %s" % (e, method, kwargs))
+        raise e
+    except Exception, e:
+        log.error("Unhandled error: %s registered while executing method %s with params %s" % (e, method, kwargs))
+        raise e
