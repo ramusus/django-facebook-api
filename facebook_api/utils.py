@@ -61,7 +61,7 @@ def graph(method, **kwargs):
         log.error("Unhandled error: %s registered while executing method %s with params %s" % (e, method, kwargs))
         raise e
 
-    if response.error_code:
+    if getattr(response, 'error_code', None):
         log.error("Error %s: %s returned while executing method %s with params %s" % (response.error_code, response.error_msg, method, kwargs))
 
     return response
