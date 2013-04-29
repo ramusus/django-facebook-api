@@ -11,6 +11,9 @@ import re
 
 log = logging.getLogger('facebook_api.models')
 
+class FacebookContentError(Exception):
+    pass
+
 class FacebookGraphManager(models.Manager):
     '''
     Facebook Graph Manager for RESTful CRUD operations
@@ -58,21 +61,64 @@ class FacebookGraphManager(models.Manager):
 
         return instance
 
-    def get_or_create_from_resource(self, resource):
-
-        instance = self.model()
-        instance.parse(dict(resource))
-
+    def get_or_create_from_resource(self, response, extra_fields=None):
+        instance = self.parse_response_dict(response, extra_fields)
         return self.get_or_create_from_instance(instance)
 
-    def fetch(self, *args, **kwargs):
+    def fetch(self, **kwargs):
         '''
         Retrieve and save object to local DB
         '''
+        result = self.get(**kwargs)
+        if isinstance(result, list):
+            return [self.get_or_create_from_instance(instance) for instance in result]
+        else:
+            return self.get_or_create_from_instance(result)
+
+    def get(self, *args, **kwargs):
+        '''
+        Retrieve objects from remote server
+        '''
+        extra_fields = kwargs.pop('extra_fields', {})
+        extra_fields['fetched'] = datetime.now()
+
         response = graph(self.resource_path % args[0], **kwargs)
-        instance = self.get_or_create_from_resource(response.toDict())
+
+        return self.parse_response(response.toDict(), extra_fields)
+
+    def parse_response(self, response, extra_fields=None):
+        if isinstance(response, (list, tuple)):
+            return self.parse_response_list(response, extra_fields)
+        elif isinstance(response, dict):
+            return self.parse_response_dict(response, extra_fields)
+        else:
+            raise FacebookContentError('Facebook response should be list or dict, not %s' % response)
+
+    def parse_response_dict(self, resource, extra_fields=None):
+
+        instance = self.model()
+        # important to do it before calling parse method
+        if extra_fields:
+            instance.__dict__.update(extra_fields)
+        instance.parse(resource)
 
         return instance
+
+    def parse_response_list(self, response_list, extra_fields=None):
+
+        instances = []
+        for resource in response_list:
+
+            try:
+                resource = dict(resource)
+            except (TypeError, ValueError), e:
+                log.error("Resource %s is not dictionary" % resource)
+                raise e
+
+            instance = self.parse_response_dict(resource, extra_fields)
+            instances += [instance]
+
+        return instances
 
 class FacebookGraphModel(models.Model):
     class Meta:
