@@ -65,11 +65,11 @@ class FacebookGraphManager(models.Manager):
         instance = self.parse_response_dict(response, extra_fields)
         return self.get_or_create_from_instance(instance)
 
-    def fetch(self, **kwargs):
+    def fetch(self, *args, **kwargs):
         '''
         Retrieve and save object to local DB
         '''
-        result = self.get(**kwargs)
+        result = self.get(*args, **kwargs)
         if isinstance(result, list):
             return [self.get_or_create_from_instance(instance) for instance in result]
         else:
