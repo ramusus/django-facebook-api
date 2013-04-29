@@ -4,6 +4,7 @@ from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
 from utils import graph
+from datetime import datetime
 import fields
 import dateutil.parser
 import logging
@@ -80,7 +81,7 @@ class FacebookGraphManager(models.Manager):
         Retrieve objects from remote server
         '''
         extra_fields = kwargs.pop('extra_fields', {})
-        extra_fields['fetched'] = datetime.now()
+#        extra_fields['fetched'] = datetime.now()
 
         response = graph(self.resource_path % args[0], **kwargs)
 
@@ -125,6 +126,8 @@ class FacebookGraphModel(models.Model):
         abstract = True
 
     remote_pk_field = 'id'
+
+#    fetched = models.DateTimeField(u'Обновлено', null=True, blank=True)
 
     objects = models.Manager()
 
