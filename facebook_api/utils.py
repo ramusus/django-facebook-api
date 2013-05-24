@@ -2,6 +2,7 @@ from django.conf import settings
 from oauth_tokens.models import AccessToken
 from facegraph import Graph, GraphException
 from datetime import datetime
+from time import sleep
 import logging
 
 __all__ = ['graph']
