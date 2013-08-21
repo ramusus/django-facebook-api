@@ -21,7 +21,7 @@ def update_token():
     '''
     Update token from provider and return it
     '''
-    return AccessToken.objects.get_from_provider('facebook')
+    return AccessToken.objects.fetch('facebook')
 
 def get_api():
     '''

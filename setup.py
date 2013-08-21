@@ -20,7 +20,7 @@ setup(
     install_requires=[
         'django',
         'django-annoying',
-        'django-oauth-tokens>=0.2.2',
+        'django-oauth-tokens>=0.3.0',
         'pyfacegraph>=0.0.36',
         'python-dateutil>=1.5',
     ],
