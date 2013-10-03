@@ -217,5 +217,7 @@ class FacebookGraphIDModel(FacebookGraphModel):
 
     graph_id = models.CharField(u'ID', max_length=100, help_text=_('Unique graph ID'), unique=True)
 
-    def get_url(self):
-        return 'http://facebook.com/%s' % self.graph_id
+    def get_url(self, slug=None):
+        if slug is None:
+            slug = self.graph_id
+        return 'http://facebook.com/%s' % slug
