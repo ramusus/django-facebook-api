@@ -1,5 +1,6 @@
 INSTALLED_APPS = (
     'oauth_tokens',
+    'taggit',
 )
 
 OAUTH_TOKENS_FACEBOOK_CLIENT_ID = 439210362826994
