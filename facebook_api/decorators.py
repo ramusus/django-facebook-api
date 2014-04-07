@@ -51,9 +51,12 @@ def fetch_all(func, return_all=None):
             else:
                 raise ValueError("Wrong type of response from func %s. It should be QuerySet or list, not a %s" % (func, type(instances)))
 
-            if getattr(response.paging, 'next', None):
-                kwargs['after'] = response.paging.cursors.after
-                return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
+            try:
+                if response.paging.next:
+                    kwargs['after'] = response.paging.cursors.after
+                    return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
+            except AttributeError:
+                pass
 
             if return_all:
                 return return_all(self, instances_all=instances_all, *args, **kwargs)
