@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.utils.functional import wraps
 from django.db.models.query import QuerySet
+import bunch
 
 def opt_arguments(func):
     '''
@@ -19,14 +20,13 @@ def opt_arguments(func):
     return meta_wrapper
 
 @opt_arguments
-def fetch_all(func, return_all=None, kwargs_offset='offset', kwargs_count='count', default_count=None):
+def fetch_all(func, return_all=None):
     """
     Class method decorator for fetching all items. Add parameter `all=False` for decored method.
     If `all` is True, method runs as many times as it returns any results.
-    Decorator receive 2 parameters:
+    Decorator receive parameters:
       * callback method `return_all`. It's called with the same parameters
         as decored method after all itmes are fetched.
-      * `kwargs_offset` - name of offset parameter among kwargs
     Usage:
 
         @fetch_all(return_all=lambda self,instance,*a,**k: instance.items.all())
@@ -34,26 +34,33 @@ def fetch_all(func, return_all=None, kwargs_offset='offset', kwargs_count='count
         ....
     """
     def wrapper(self, all=False, instances_all=None, *args, **kwargs):
+
+        instances = func(self, *args, **kwargs)
+        if len(instances) == 2 and isinstance(instances[0], bunch):
+            response, instances = instances
+
         if all:
-            if not instances_all:
-                instances_all = QuerySet().none()
+            if isinstance(instances, QuerySet):
+                if not instances_all:
+                    instances_all = QuerySet().none()
+                instances_all |= instances
+            elif isinstance(instances, list):
+                if not instances_all:
+                    instances_all = []
+                instances_all += instances
+            else:
+                raise ValueError("Wrong type of response from func %s. It should be QuerySet or list, not a %s" % (func, type(instances)))
 
-            instances = func(self, *args, **kwargs)
-            instances_all |= instances
-            instances_count = len(instances)
-
-            if instances_count > 0 and (not default_count or instances_count == kwargs.get(kwargs_count, default_count)):
-                # TODO: make protection somehow from endless loop in case
-                # where `kwargs_offset` argument is not make any sense for `func`
-                kwargs[kwargs_offset] = kwargs.get(kwargs_offset, 0) + instances_count
+            if getattr(response.paging, 'next', None):
+                kwargs['after'] = response.paging.cursors.after
                 return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
 
             if return_all:
-                return return_all(self, *args, **kwargs)
+                return return_all(self, instances_all=instances_all, *args, **kwargs)
             else:
                 return instances_all
         else:
-            return func(self, *args, **kwargs)
+            return instances
 
     return wraps(func)(wrapper)
 

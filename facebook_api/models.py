@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 from django.db import models
+try:
+    from django.db.transaction import atomic
+except ImportError:
+    from django.db.transaction import commit_on_success as atomic
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
@@ -44,7 +48,8 @@ class FacebookGraphManager(models.Manager):
         '''
         Return object by slug
         '''
-        return self.model.remote.fetch(slug)
+        # TODO: change to self.get method
+        return self.fetch(slug)
 
     def get_or_create_from_instance(self, instance):
 
@@ -66,6 +71,7 @@ class FacebookGraphManager(models.Manager):
         instance = self.parse_response_dict(response, extra_fields)
         return self.get_or_create_from_instance(instance)
 
+    @atomic
     def fetch(self, *args, **kwargs):
         '''
         Retrieve and save object to local DB

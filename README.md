@@ -1,6 +1,6 @@
 # Django Facebook Graph API
 
-[![Build Status](https://travis-ci.org/ramusus/django-facebook-api.png?branch=master)](https://travis-ci.org/ramusus/django-facebook-api) [![Coverage Status](https://coveralls.io/repos/ramusus/django-facebook-api/badge.png?branch=master)](https://coveralls.io/r/ramusus/django-facebook-api)
+[![PyPI version](https://badge.fury.io/py/django-facebook-api.png)](http://badge.fury.io/py/django-facebook-api) [![Build Status](https://travis-ci.org/ramusus/django-facebook-api.png?branch=master)](https://travis-ci.org/ramusus/django-facebook-api) [![Coverage Status](https://coveralls.io/repos/ramusus/django-facebook-api/badge.png?branch=master)](https://coveralls.io/r/ramusus/django-facebook-api)
 
 Application for interacting with Facebook Graph API objects using Django model interface
 
