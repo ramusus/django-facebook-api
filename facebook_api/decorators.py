@@ -37,7 +37,7 @@ def fetch_all(func, return_all=None):
 
         instances = func(self, *args, **kwargs)
         if len(instances) == 2 and isinstance(instances[1], Bunch):
-            response, instances = instances
+            instances, response = instances
 
         if all:
             if isinstance(instances, QuerySet):
