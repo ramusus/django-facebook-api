@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.utils.functional import wraps
 from django.db.models.query import QuerySet
-import bunch
+from bunch import Bunch
 
 def opt_arguments(func):
     '''
@@ -36,7 +36,7 @@ def fetch_all(func, return_all=None):
     def wrapper(self, all=False, instances_all=None, *args, **kwargs):
 
         instances = func(self, *args, **kwargs)
-        if len(instances) == 2 and isinstance(instances[0], bunch):
+        if len(instances) == 2 and isinstance(instances[1], Bunch):
             response, instances = instances
 
         if all:
