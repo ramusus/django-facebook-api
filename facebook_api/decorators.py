@@ -2,6 +2,7 @@
 from django.utils.functional import wraps
 from django.db.models.query import QuerySet
 from bunch import Bunch
+import re
 
 def opt_arguments(func):
     '''
@@ -20,23 +21,28 @@ def opt_arguments(func):
     return meta_wrapper
 
 @opt_arguments
-def fetch_all(func, return_all=None):
+def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None):
     """
     Class method decorator for fetching all items. Add parameter `all=False` for decored method.
     If `all` is True, method runs as many times as it returns any results.
     Decorator receive parameters:
       * callback method `return_all`. It's called with the same parameters
         as decored method after all itmes are fetched.
+      * `always_all` bool - return all instances in any case of argument `all`
+        of decorated method
     Usage:
 
         @fetch_all(return_all=lambda self,instance,*a,**k: instance.items.all())
         def fetch_something(self, ..., *kwargs):
         ....
     """
-    def wrapper(self, all=False, instances_all=None, *args, **kwargs):
+    def wrapper(self, *args, **kwargs):
+
+        all = kwargs.pop('all', False) or always_all
+        instances_all = kwargs.pop('instances_all', None)
 
         instances = func(self, *args, **kwargs)
-        if len(instances) == 2 and isinstance(instances[1], Bunch):
+        if len(instances) == 2 and isinstance(instances, tuple):
             instances, response = instances
 
         if all:
@@ -51,15 +57,32 @@ def fetch_all(func, return_all=None):
             else:
                 raise ValueError("Wrong type of response from func %s. It should be QuerySet or list, not a %s" % (func, type(instances)))
 
+            # resursive pagination
+            paging_next = paging_cursors = None
             try:
-                if response.paging.next:
-                    kwargs['after'] = response.paging.cursors.after
-                    return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
+                paging_next = response.paging.next
+                paging_cursors = response.paging.cursors
             except AttributeError:
                 pass
 
+            if paging_next_arg_name and paging_next and paging_next_arg_name in paging_next:
+                paging_next_arg_value = None
+                # at first look in cursors
+                if paging_cursors:
+                    paging_next_arg_value = getattr(paging_cursors, paging_next_arg_name, None)
+                if paging_next_arg_value is None:
+                    # at second look parse from paging_next
+                    m = re.findall('%s=([^&]+)' % paging_next_arg_name, paging_next)
+                    if len(m):
+                        paging_next_arg_value = m[0]
+                if paging_next_arg_value is None:
+                        raise ValueError("Wrong response pagination value: %s, paging_next_arg_name=%s" % (paging_next, paging_next_arg_name))
+                kwargs[paging_next_arg_name] = paging_next_arg_value
+                return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
+
             if return_all:
-                return return_all(self, instances_all=instances_all, *args, **kwargs)
+                kwargs['instances'] = instances_all
+                return return_all(self, *args, **kwargs)
             else:
                 return instances_all
         else:
