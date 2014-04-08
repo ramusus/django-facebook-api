@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
+from django.conf import settings
 try:
     from django.db.transaction import atomic
 except ImportError:
@@ -15,6 +16,8 @@ import logging
 import re
 
 log = logging.getLogger('facebook_api.models')
+
+MASTER_DATABASE = getattr(settings, 'FACEBOOK_API_MASTER_DATABASE', 'default')
 
 class FacebookContentError(Exception):
     pass
@@ -58,7 +61,7 @@ class FacebookGraphManager(models.Manager):
             remote_pk_dict[field_name] = getattr(instance, field_name)
 
         try:
-            old_instance = self.model.objects.get(**remote_pk_dict)
+            old_instance = self.model.objects.using(MASTER_DATABASE).get(**remote_pk_dict)
             instance._substitute(old_instance)
             instance.save()
         except self.model.DoesNotExist:
