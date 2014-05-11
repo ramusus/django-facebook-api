@@ -2,7 +2,7 @@ from django.conf import settings
 from oauth_tokens.models import AccessToken
 from facegraph import Graph, GraphException
 from datetime import datetime
-from time import sleep
+import time
 import logging
 
 __all__ = ['graph']
@@ -49,7 +49,7 @@ def graph(method, **kwargs):
             update_token()
             return graph(method, **kwargs)
         elif 'An unexpected error has occurred. Please retry your request later' in str(e):
-            sleep(1)
+            time.sleep(1)
             return graph(method, **kwargs)
         else:
             raise e
@@ -64,5 +64,7 @@ def graph(method, **kwargs):
 
     if getattr(response, 'error_code', None):
         log.error("Error %s: %s returned while executing method %s with params %s" % (response.error_code, response.error_msg, method, kwargs))
+        time.sleep(1)
+        return graph(method, **kwargs)
 
     return response

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.utils.functional import wraps
 from django.db.models.query import QuerySet
-from bunch import Bunch
 import re
 
 def opt_arguments(func):
