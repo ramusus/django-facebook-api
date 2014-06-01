@@ -51,6 +51,11 @@ class FacebookGraphManager(models.Manager):
         '''
         Return object by slug
         '''
+        if 'pages' in slug:
+            parts = slug.split('/')
+            if len(parts) == 3:
+                slug = parts[2]
+
         # TODO: change to self.get method
         return self.fetch(slug)
 
