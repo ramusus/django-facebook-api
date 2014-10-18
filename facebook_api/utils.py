@@ -23,7 +23,7 @@ def update_token():
     '''
     return AccessToken.objects.fetch('facebook')
 
-def get_api():
+def get_api(used_access_tokens=None, *args, **kwargs):
     '''
     Return API instance with latest token from database
     '''
@@ -34,20 +34,30 @@ def get_api():
         if not tokens:
             update_token()
             tokens = get_tokens()
+
+        if used_access_tokens:
+            tokens = tokens.exclude(access_token__in=used_access_tokens)
+
         token = tokens[0].access_token
+
     return Graph(token)
 
-def graph(method, **kwargs):
+def graph(method, methods_access_tag=None, used_access_tokens=None, **kwargs):
     '''
     Call API using access_token
     '''
-    api = get_api()
+    api = get_api(tag=methods_access_tag, used_access_tokens=used_access_tokens)
     try:
         response = api[method](**kwargs)
     except GraphException, e:
         if e.code == 190:
             update_token()
             return graph(method, **kwargs)
+        elif e.code == 17:
+            # "User request limit reached", try access_token of another user
+#            log.info("Vkontakte error 'Too many requests per second' on method: %s, recursion count: %d" % (method, recursion_count))
+            used_access_tokens = [api.access_token] + (used_access_tokens or [])
+            return graph(method, methods_access_tag, used_access_tokens, **kwargs)
         elif 'An unexpected error has occurred. Please retry your request later' in str(e):
             time.sleep(1)
             return graph(method, **kwargs)
