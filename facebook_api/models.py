@@ -56,8 +56,7 @@ class FacebookGraphManager(models.Manager):
             if len(parts) == 3:
                 slug = parts[2]
 
-        # TODO: change to self.get method
-        return self.fetch(slug)
+        return self.get(slug)
 
     def get_or_create_from_instance(self, instance):
 
