@@ -8,6 +8,7 @@ except ImportError:
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
+from signals import facebook_api_post_fetch
 from utils import graph
 from datetime import datetime
 import fields
@@ -72,6 +73,7 @@ class FacebookGraphManager(models.Manager):
             instance.save()
             log.debug('Fetch and create new object %s with remote pk %s' % (self.model, remote_pk_dict))
 
+        facebook_api_post_fetch.send(sender=instance.__class__, instance=instance, created=(not old_instance))
         return instance
 
     def get_or_create_from_resource(self, response, extra_fields=None):
