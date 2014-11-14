@@ -11,17 +11,20 @@ log = logging.getLogger('facebook_api')
 
 ACCESS_TOKEN = getattr(settings, 'FACEBOOK_API_ACCESS_TOKEN', None)
 
-def get_tokens():
+
+def get_tokens(**kwargs):
     '''
     Get all vkontakte tokens list
     '''
-    return AccessToken.objects.filter(provider='facebook').order_by('-granted')
+    return AccessToken.objects.filter(provider='facebook', **kwargs).order_by('-granted')
+
 
 def update_token():
     '''
     Update token from provider and return it
     '''
     return AccessToken.objects.fetch('facebook')
+
 
 def get_api(used_access_tokens=None, *args, **kwargs):
     '''
@@ -30,10 +33,10 @@ def get_api(used_access_tokens=None, *args, **kwargs):
     if ACCESS_TOKEN:
         token = ACCESS_TOKEN
     else:
-        tokens = get_tokens()
+        tokens = get_tokens(**kwargs)
         if not tokens:
             update_token()
-            tokens = get_tokens()
+            tokens = get_tokens(**kwargs)
 
         if used_access_tokens:
             tokens = tokens.exclude(access_token__in=used_access_tokens)
@@ -41,6 +44,7 @@ def get_api(used_access_tokens=None, *args, **kwargs):
         token = tokens[0].access_token
 
     return Graph(token)
+
 
 def graph(method, methods_access_tag=None, used_access_tokens=None, **kwargs):
     '''
