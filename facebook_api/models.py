@@ -153,7 +153,7 @@ class FacebookGraphModel(models.Model):
         # different lists for saving related objects
         self._external_links_post_save = []
         self._foreignkeys_post_save = []
-        self._external_links_to_add = []
+        self._external_links_to_add = {}
 
     def _substitute(self, old_instance):
         '''
@@ -220,12 +220,12 @@ class FacebookGraphModel(models.Model):
             instance.__class__.remote.get_or_create_from_instance(instance)
         self._external_links_post_save = []
 
-        for field, instance in self._external_links_to_add:
-            # if there is already connected instances, then continue, because it's hard to check for duplicates
-            if getattr(self, field).count():
-                continue
-            getattr(self, field).add(instance)
-        self._external_links_to_add = []
+        # process self._external_links_to_add
+        for field, instances in self._external_links_to_add.items():
+            getattr(self, field).all().delete()
+            for instance in instances:
+                getattr(self, field).add(instance)
+        self._external_links_to_add = {}
 
 class FacebookGraphIDModel(FacebookGraphModel):
     class Meta:
