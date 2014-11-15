@@ -70,6 +70,7 @@ class FacebookGraphManager(models.Manager):
             instance._substitute(old_instance)
             instance.save()
         except self.model.DoesNotExist:
+            old_instance = None
             instance.save()
             log.debug('Fetch and create new object %s with remote pk %s' % (self.model, remote_pk_dict))
 

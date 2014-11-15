@@ -80,8 +80,12 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
                     m = re.findall('%s=([^&]+)' % paging_next_arg_name, paging_next)
                     if len(m):
                         paging_next_arg_value = m[0]
+                    # __paging_token=enc_AeylNUQG2Z3DpcZgvUECXW1BHDhsvO8chTp-mQY341mQex3MIce-VnU_PztAiKnskGDcNT61dsycEgphUi9kVy9KYJV2QutwpbPZ0p32OsSQlw
+                    m = re.findall('%s=([^&]+)' % '__paging_token', paging_next)
+                    if len(m):
+                        kwargs['__paging_token'] = m[0]
                 if paging_next_arg_value is None:
-                        raise ValueError("Wrong response pagination value: %s, paging_next_arg_name=%s" % (paging_next, paging_next_arg_name))
+                    raise ValueError("Wrong response pagination value: %s, paging_next_arg_name=%s" % (paging_next, paging_next_arg_name))
                 kwargs[paging_next_arg_name] = paging_next_arg_value
                 return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
 
