@@ -147,6 +147,13 @@ class FacebookGraphModel(models.Model):
 
     objects = models.Manager()
 
+    @property
+    def slug(self):
+        raise NotImplementedError("Property %s.slug should be specified" % self.__class__.__name__)
+
+    def get_url(self):
+        return 'http://facebook.com/%s' % self.slug
+
     def __init__(self, *args, **kwargs):
         super(FacebookGraphModel, self).__init__(*args, **kwargs)
 
@@ -233,7 +240,6 @@ class FacebookGraphIDModel(FacebookGraphModel):
 
     graph_id = models.CharField(u'ID', max_length=100, help_text=_('Unique graph ID'), unique=True)
 
-    def get_url(self, slug=None):
-        if slug is None:
-            slug = self.graph_id
-        return 'http://facebook.com/%s' % slug
+    @property
+    def slug(self):
+        return self.graph_id
