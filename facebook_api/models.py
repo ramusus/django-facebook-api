@@ -1,32 +1,35 @@
 # -*- coding: utf-8 -*-
-from django.db import models
+from datetime import datetime
+import logging
+import re
+
+import dateutil.parser
 from django.conf import settings
-try:
-    from django.db.transaction import atomic
-except ImportError:
-    from django.db.transaction import commit_on_success as atomic
+from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
-from signals import facebook_api_post_fetch
-from utils import graph
-from datetime import datetime
 import fields
-import dateutil.parser
-import logging
-import re
+
+from .decorators import atomic
+from .signals import facebook_api_post_fetch
+from .utils import graph
 
 log = logging.getLogger('facebook_api.models')
 
 MASTER_DATABASE = getattr(settings, 'FACEBOOK_API_MASTER_DATABASE', 'default')
 
+
 class FacebookContentError(Exception):
     pass
 
+
 class FacebookGraphManager(models.Manager):
+
     '''
     Facebook Graph Manager for RESTful CRUD operations
     '''
+
     def __init__(self, remote_pk=None, resource_path='%s', *args, **kwargs):
         if '%s' not in resource_path:
             raise ValueError('Argument resource_path must contains %s character')
@@ -61,6 +64,7 @@ class FacebookGraphManager(models.Manager):
 
     def get_or_create_from_instance(self, instance):
 
+        old_instance = None
         remote_pk_dict = {}
         for field_name in self.remote_pk:
             remote_pk_dict[field_name] = getattr(instance, field_name)
@@ -70,7 +74,6 @@ class FacebookGraphManager(models.Manager):
             instance._substitute(old_instance)
             instance.save()
         except self.model.DoesNotExist:
-            old_instance = None
             instance.save()
             log.debug('Fetch and create new object %s with remote pk %s' % (self.model, remote_pk_dict))
 
@@ -137,7 +140,9 @@ class FacebookGraphManager(models.Manager):
 
         return instances
 
+
 class FacebookGraphModel(models.Model):
+
     class Meta:
         abstract = True
 
@@ -191,7 +196,7 @@ class FacebookGraphModel(models.Model):
                     self._external_links_post_save += [(field.field.name, rel_instance)]
             else:
                 if isinstance(field, models.DateTimeField) and value:
-                    value = dateutil.parser.parse(value)#.replace(tzinfo=None)
+                    value = dateutil.parser.parse(value)  # .replace(tzinfo=None)
 
                 elif isinstance(field, (models.OneToOneField, models.ForeignKey)) and value:
                     rel_instance = field.rel.to()
@@ -234,12 +239,44 @@ class FacebookGraphModel(models.Model):
                 getattr(self, field).add(instance)
         self._external_links_to_add = {}
 
+
 class FacebookGraphIDModel(FacebookGraphModel):
-    class Meta:
-        abstract = True
 
     graph_id = models.CharField(u'ID', max_length=100, help_text=_('Unique graph ID'), unique=True)
+
+    class Meta:
+        abstract = True
 
     @property
     def slug(self):
         return self.graph_id
+
+
+class FacebookGraphPKModelMixin:
+
+    @property
+    def slug(self):
+        return self.graph_id
+
+    @property
+    def id(self):
+        return self.pk
+
+    def _substitute(self, old_instance):
+        return
+
+
+class FacebookGraphStrPKModel(FacebookGraphModel, FacebookGraphPKModelMixin):
+
+    graph_id = models.CharField(u'ID', primary_key=True, unique=True, max_length=200, help_text=_('Unique graph ID'))
+
+    class Meta:
+        abstract = True
+
+
+class FacebookGraphIntPKModel(FacebookGraphModel, FacebookGraphPKModelMixin):
+
+    graph_id = models.BigIntegerField(u'ID', primary_key=True, unique=True, max_length=100, help_text=_('Unique graph ID'))
+
+    class Meta:
+        abstract = True

@@ -9,8 +9,6 @@ __all__ = ['graph']
 
 log = logging.getLogger('facebook_api')
 
-ACCESS_TOKEN = getattr(settings, 'FACEBOOK_API_ACCESS_TOKEN', None)
-
 
 def get_tokens(**kwargs):
     '''
@@ -30,9 +28,8 @@ def get_api(used_access_tokens=None, *args, **kwargs):
     '''
     Return API instance with latest token from database
     '''
-    if ACCESS_TOKEN:
-        token = ACCESS_TOKEN
-    else:
+    token = getattr(settings, 'FACEBOOK_API_ACCESS_TOKEN', None)
+    if not token:
         tokens = get_tokens(**kwargs)
         if not tokens:
             update_token()
