@@ -266,7 +266,7 @@ class FacebookGraphPKModelMixin:
         return
 
 
-class FacebookGraphStrPKModel(FacebookGraphModel, FacebookGraphPKModelMixin):
+class FacebookGraphStrPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
 
     graph_id = models.CharField(u'ID', primary_key=True, unique=True, max_length=200, help_text=_('Unique graph ID'))
 
@@ -274,7 +274,7 @@ class FacebookGraphStrPKModel(FacebookGraphModel, FacebookGraphPKModelMixin):
         abstract = True
 
 
-class FacebookGraphIntPKModel(FacebookGraphModel, FacebookGraphPKModelMixin):
+class FacebookGraphIntPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
 
     graph_id = models.BigIntegerField(u'ID', primary_key=True, unique=True, max_length=100, help_text=_('Unique graph ID'))
 
