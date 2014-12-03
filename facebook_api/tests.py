@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.test import TestCase
-from facebook_api.utils import graph
+
+from .utils import graph
+
 
 class FacebookApiTest(TestCase):
 
@@ -14,6 +16,5 @@ class FacebookApiTest(TestCase):
 
     def test_empty_result(self):
 
-        result = graph('8576093908/posts', **{'limit': 1000, 'until': 1345661805, 'offset': 0})
-        if result is not None:
-            self.assertEqual(result.error_code, 1)
+        with self.assertRaises(Exception):
+            graph('135161613191462/posts', **{'limit': 250, 'since': 1416258000})

@@ -15,7 +15,9 @@ from .decorators import atomic
 from .signals import facebook_api_post_fetch
 from .utils import graph
 
+
 log = logging.getLogger('facebook_api.models')
+
 
 MASTER_DATABASE = getattr(settings, 'FACEBOOK_API_MASTER_DATABASE', 'default')
 
@@ -198,6 +200,12 @@ class FacebookGraphModel(models.Model):
                 if isinstance(field, models.DateTimeField) and value:
                     value = dateutil.parser.parse(value)  # .replace(tzinfo=None)
 
+                elif isinstance(field, (models.IntegerField)) and value:
+                    try:
+                        value = int(value)
+                    except:
+                        pass
+
                 elif isinstance(field, (models.OneToOneField, models.ForeignKey)) and value:
                     rel_instance = field.rel.to()
                     rel_instance.parse(dict(value))
@@ -276,7 +284,8 @@ class FacebookGraphStrPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
 
 class FacebookGraphIntPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
 
-    graph_id = models.BigIntegerField(u'ID', primary_key=True, unique=True, max_length=100, help_text=_('Unique graph ID'))
+    graph_id = models.BigIntegerField(
+        u'ID', primary_key=True, unique=True, max_length=100, help_text=_('Unique graph ID'))
 
     class Meta:
         abstract = True
