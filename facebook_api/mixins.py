@@ -54,7 +54,7 @@ class LikableModelMixin(models.Model):
         abstract = True
 
     likes_users = ManyToManyHistoryField(User, related_name='like_%(class)ss')
-    likes_count = models.IntegerField(default=0)
+    likes_count = models.PositiveIntegerField(null=True, help_text='The number of likes of this item')
 
     def parse(self, response):
         if 'like_count' in response:
@@ -91,7 +91,7 @@ class LikableModelMixin(models.Model):
 class ShareableModelMixin(models.Model):
 
     shares_users = ManyToManyHistoryField(User, related_name='shares_%(class)ss')
-    shares_count = models.IntegerField(null=True)
+    shares_count = models.PositiveIntegerField(null=True, help_text='The number of shares of this item')
 
     class Meta:
         abstract = True

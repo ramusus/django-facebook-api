@@ -250,7 +250,7 @@ class FacebookGraphModel(models.Model):
 
 class FacebookGraphIDModel(FacebookGraphModel):
 
-    graph_id = models.CharField(u'ID', max_length=100, help_text=_('Unique graph ID'), unique=True)
+    graph_id = models.CharField(u'ID', max_length=70, help_text=_('Unique graph ID'), unique=True)
 
     class Meta:
         abstract = True
@@ -276,7 +276,7 @@ class FacebookGraphPKModelMixin:
 
 class FacebookGraphStrPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
 
-    graph_id = models.CharField(u'ID', primary_key=True, unique=True, max_length=200, help_text=_('Unique graph ID'))
+    graph_id = models.CharField(u'ID', primary_key=True, unique=True, max_length=70, help_text=_('Unique graph ID'))
 
     class Meta:
         abstract = True
@@ -284,8 +284,7 @@ class FacebookGraphStrPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
 
 class FacebookGraphIntPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
 
-    graph_id = models.BigIntegerField(
-        u'ID', primary_key=True, unique=True, max_length=100, help_text=_('Unique graph ID'))
+    graph_id = models.BigIntegerField(u'ID', primary_key=True, unique=True, help_text=_('Unique graph ID'))
 
     class Meta:
         abstract = True
