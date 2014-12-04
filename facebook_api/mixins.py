@@ -35,6 +35,9 @@ class AuthorableModelMixin(models.Model):
     author_id = models.PositiveIntegerField(null=True, db_index=True)
     author = generic.GenericForeignKey('author_content_type', 'author_id')
 
+    class Meta:
+        abstract = True
+
     def parse(self, response):
         if 'from' in response:
             response['author_json'] = response.pop('from')
@@ -44,17 +47,27 @@ class AuthorableModelMixin(models.Model):
         if self.author is None and self.author_json:
             self.author = get_or_create_from_small_resource(self.author_json)
 
+
+class ActionableModelMixin(models.Model):
+
+    actions_count = models.PositiveIntegerField(null=True, help_text='The number of total actions with this item')
+
     class Meta:
         abstract = True
+
+    def save(self, *args, **kwargs):
+        self.actions_count = sum([getattr(self, field, None) or 0
+                                  for field in ['likes_count', 'shares_count', 'comments_count']])
+        super(ActionableModelMixin, self).save(*args, **kwargs)
 
 
 class LikableModelMixin(models.Model):
 
-    class Meta:
-        abstract = True
-
     likes_users = ManyToManyHistoryField(User, related_name='like_%(class)ss')
     likes_count = models.PositiveIntegerField(null=True, help_text='The number of likes of this item')
+
+    class Meta:
+        abstract = True
 
     def parse(self, response):
         if 'like_count' in response:
@@ -97,7 +110,7 @@ class ShareableModelMixin(models.Model):
         abstract = True
 
     def update_count_and_get_shares_users(self, instances, *args, **kwargs):
-        self.shares_users = instances
+#        self.shares_users = instances
         # becouse here are not all shares: "Some posts may not appear here because of their privacy settings."
         if self.shares_count is None:
             self.shares_count = instances.count()
@@ -146,7 +159,9 @@ class ShareableModelMixin(models.Model):
                         continue
 
             m2m_model = self.shares_users.through
-            field_name = '%s_id' % self._meta.module_name  # '(album|post)_id'
+            # '(album|post)_id'
+            field_name = [f.attname for f in m2m_model._meta.local_fields
+                          if isinstance(f, models.ForeignKey) and f.name != 'user'][0]
 
             # remove old shares without time_from
             self.shares_users.get_query_set_through().filter(time_from=None).delete()
@@ -155,7 +170,7 @@ class ShareableModelMixin(models.Model):
             self.shares_users.get_query_set_through().filter(
                 **{field_name: self.pk, 'user_id__in': map(lambda i: i[1], ids_add_pairs)}).delete()
 
-            # add new shares
+            # add new shares with specified `time_from` value
             get_share_date = lambda id: timestamps[id] if id in timestamps else self.created_time
             m2m_model.objects.bulk_create([m2m_model(
                 **{field_name: self.pk, 'user_id': pk, 'time_from': get_share_date(graph_id)}) for graph_id, pk in ids_add_pairs])
