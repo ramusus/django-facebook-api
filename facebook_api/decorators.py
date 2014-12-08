@@ -48,6 +48,7 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
         all = kwargs.pop('all', False) or always_all
         instances_all = kwargs.pop('instances_all', None)
 
+        response = None
         instances = func(self, *args, **kwargs)
         if len(instances) == 2 and isinstance(instances, tuple):
             instances, response = instances
@@ -67,11 +68,12 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
 
             # resursive pagination
             paging_next = paging_cursors = None
-            try:
-                paging_next = response.paging.next
-                paging_cursors = response.paging.cursors
-            except AttributeError:
-                pass
+            if response:
+                try:
+                    paging_next = response.paging.next
+                    paging_cursors = response.paging.cursors
+                except AttributeError:
+                    pass
 
             if paging_next_arg_name and paging_next and paging_next_arg_name in paging_next:
                 paging_next_arg_value = None
