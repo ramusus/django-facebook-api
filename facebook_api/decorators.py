@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from django.utils.functional import wraps
-from django.db.models.query import QuerySet
 import re
 
+from django.db.models.query import QuerySet
+from django.utils.functional import wraps
 try:
     from django.db.transaction import atomic
 except ImportError:
@@ -25,6 +25,7 @@ def opt_arguments(func):
             return meta_func
     return meta_wrapper
 
+
 @opt_arguments
 def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None):
     """
@@ -41,11 +42,13 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
         def fetch_something(self, ..., *kwargs):
         ....
     """
+
     def wrapper(self, *args, **kwargs):
 
         all = kwargs.pop('all', False) or always_all
         instances_all = kwargs.pop('instances_all', None)
 
+        response = None
         instances = func(self, *args, **kwargs)
         if len(instances) == 2 and isinstance(instances, tuple):
             instances, response = instances
@@ -60,15 +63,17 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
                     instances_all = []
                 instances_all += instances
             else:
-                raise ValueError("Wrong type of response from func %s. It should be QuerySet or list, not a %s" % (func, type(instances)))
+                raise ValueError(
+                    "Wrong type of response from func %s. It should be QuerySet or list, not a %s" % (func, type(instances)))
 
             # resursive pagination
             paging_next = paging_cursors = None
-            try:
-                paging_next = response.paging.next
-                paging_cursors = response.paging.cursors
-            except AttributeError:
-                pass
+            if response:
+                try:
+                    paging_next = response.paging.next
+                    paging_cursors = response.paging.cursors
+                except AttributeError:
+                    pass
 
             if paging_next_arg_name and paging_next and paging_next_arg_name in paging_next:
                 paging_next_arg_value = None
@@ -80,8 +85,13 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
                     m = re.findall('%s=([^&]+)' % paging_next_arg_name, paging_next)
                     if len(m):
                         paging_next_arg_value = m[0]
+                    # __paging_token=enc_AeylNUQG2Z3DpcZgvUECXW1BHDhsvO8chTp-mQY341mQex3MIce-VnU_PztAiKnskGDcNT61dsycEgphUi9kVy9KYJV2QutwpbPZ0p32OsSQlw
+                    m = re.findall('%s=([^&]+)' % '__paging_token', paging_next)
+                    if len(m):
+                        kwargs['__paging_token'] = m[0]
                 if paging_next_arg_value is None:
-                        raise ValueError("Wrong response pagination value: %s, paging_next_arg_name=%s" % (paging_next, paging_next_arg_name))
+                    raise ValueError("Wrong response pagination value: %s, paging_next_arg_name=%s" %
+                                     (paging_next, paging_next_arg_name))
                 kwargs[paging_next_arg_name] = paging_next_arg_value
                 return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
 
@@ -94,6 +104,7 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
             return instances
 
     return wraps(func)(wrapper)
+
 
 def opt_generator(func):
     """
@@ -117,3 +128,23 @@ def opt_generator(func):
         result = func(*args, **kwargs)
         return result if as_generator else list(result)
     return wraps(func)(wrapper)
+
+
+'''
+From here http://stackoverflow.com/questions/815110/is-there-a-decorator-to-simply-cache-function-return-values
+With modifications for properties
+'''
+
+
+def memoize(function):
+    memo = {}
+
+    def wrapper(*args, **kwargs):
+        key = args
+        if key in memo:
+            return memo[key]
+        else:
+            result = function(*args, **kwargs) if hasattr(function, '__call__') else function
+            memo[key] = result
+            return result
+    return wrapper
