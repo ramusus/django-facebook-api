@@ -9,9 +9,10 @@ from django.utils.six import string_types
 from facebook_users.models import User
 from m2m_history.fields import ManyToManyHistoryField
 
+from .api import api_call
 from .decorators import fetch_all, atomic
 from .fields import JSONField
-from .utils import graph, get_or_create_from_small_resource, UnknownResourceType
+from .utils import get_or_create_from_small_resource, UnknownResourceType
 
 log = logging.getLogger('facebook_api')
 
@@ -87,7 +88,7 @@ class LikableModelMixin(models.Model):
         Retrieve and save all likes of post
         '''
         ids = []
-        response = graph('%s/likes' % self.graph_id, limit=limit, **kwargs)
+        response = api_call('%s/likes' % self.graph_id, limit=limit, **kwargs)
         if response:
             log.debug('response objects count=%s, limit=%s, after=%s' %
                       (len(response.data), limit, kwargs.get('after')))
@@ -131,7 +132,7 @@ class ShareableModelMixin(models.Model):
         if isinstance(graph_id, string_types):
             graph_id = graph_id.split('_').pop()
 
-        response = graph('%s/sharedposts' % graph_id, **kwargs)
+        response = api_call('%s/sharedposts' % graph_id, **kwargs)
         if response:
             timestamps = dict(
                 [(int(post['from']['id']), datetime_parse(post['created_time'])) for post in response.data])

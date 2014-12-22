@@ -9,12 +9,11 @@ from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
-import fields
 
+from . import fields
+from .api import api_call
 from .decorators import atomic
 from .signals import facebook_api_post_fetch
-from .utils import graph
-
 
 log = logging.getLogger('facebook_api.models')
 
@@ -104,7 +103,7 @@ class FacebookGraphManager(models.Manager):
         extra_fields = kwargs.pop('extra_fields', {})
 #        extra_fields['fetched'] = datetime.now()
 
-        response = graph(self.resource_path % args[0], **kwargs)
+        response = api_call(self.resource_path % args[0], **kwargs)
 
         return self.parse_response(response.toDict(), extra_fields)
 
