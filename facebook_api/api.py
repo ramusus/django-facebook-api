@@ -38,8 +38,8 @@ class FacebookApi(ApiAbstractBase):
         try:
             return getattr(self.api, self.method)(*args, **kwargs)
         except ValueError, e:
-            log.warning("ValueError: %s registered while executing method %s with params %s" %
-                        (e, self.method, kwargs))
+            self.logger.warning("ValueError: %s registered while executing method %s with params %s" %
+                                (e, self.method, kwargs))
             # sometimes returns this dictionary, sometimes empty response, covered by test "test_empty_result"
             # data = {"error_code":1,"error_msg":"An unknown error occurred"}
             # TODO: perhaps, exception should be raisen here
