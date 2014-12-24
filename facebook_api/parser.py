@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
-from django.conf import settings
 from datetime import datetime, timedelta
+import re
+
 from BeautifulSoup import BeautifulSoup
+from django.conf import settings
 from oauth_tokens.providers.facebook import FacebookAccessToken
 import requests
-import re
+
 
 class FacebookParseError(Exception):
     pass
+
 
 class FacebookParser(object):
 
@@ -34,7 +37,7 @@ class FacebookParser(object):
 
         if authorized:
             if not self.auth_access:
-                self.auth_access = FacebookAccessToken()
+                self.auth_access = FacebookAccessToken().auth_request
             response = self.auth_access.authorized_request(*args, **kwargs)
         else:
             response = getattr(requests, kwargs.pop('method', 'get'))(*args, **kwargs)

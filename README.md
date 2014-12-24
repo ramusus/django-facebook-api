@@ -28,8 +28,8 @@ Add into `settings.py` lines:
 
 ### Simple API Graph request
 
-    >>> from facebook_api.utils import graph
-    >>> graph('zuck')
+    >>> from facebook_api.api import api_call
+    >>> api_call('zuck')
     Node(<Graph(u'https://graph.facebook.com/zuck') at 0xb1cbfac>,
          {'first_name': 'Mark',
           'gender': 'male',
@@ -41,6 +41,6 @@ Add into `settings.py` lines:
           'updated_time': '2013-03-13T20:36:43+0000',
           'username': 'zuck'})
 
-    >>> graph('zuck', fields='id,name')
+    >>> api_call('zuck', fields='id,name')
     Node(<Graph(u'https://graph.facebook.com/zuck') at 0xb1d2a8c>,
          {'id': '4', 'name': 'Mark Zuckerberg'})

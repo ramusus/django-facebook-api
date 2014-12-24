@@ -1,6 +1,6 @@
-from setuptools import setup, find_packages
 import re
 
+from setuptools import setup, find_packages
 setup(
     name='django-facebook-api',
     version=__import__('facebook_api').__version__,
@@ -13,14 +13,14 @@ setup(
     license='BSD',
     packages=find_packages(),
     include_package_data=True,
-    zip_safe=False, # because we're including media that Django needs
-    dependency_links = [
+    zip_safe=False,  # because we're including media that Django needs
+    dependency_links=[
         'https://github.com/iplatform/pyFaceGraph/tarball/master#egg=pyfacegraph-0.0.36',
     ],
     install_requires=[
         'django',
         'django-annoying',
-        'django-oauth-tokens>=0.3.0',
+        'django-oauth-tokens>=0.4.5',
         'pyfacegraph>=0.0.36',
         'python-dateutil>=1.5',
     ],
