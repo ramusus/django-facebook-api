@@ -19,7 +19,8 @@ log = logging.getLogger('facebook_api')
 
 class OwnerableModelMixin(models.Model):
 
-    owner_content_type = models.ForeignKey(ContentType, null=True, related_name='content_type_owners_facebook_%(class)ss')
+    owner_content_type = models.ForeignKey(
+        ContentType, null=True, related_name='content_type_owners_%(app_label)s_%(class)ss')
     owner_id = models.BigIntegerField(null=True, db_index=True)
     owner = generic.GenericForeignKey('owner_content_type', 'owner_id')
 
@@ -32,7 +33,8 @@ class AuthorableModelMixin(models.Model):
     # object containing the name and Facebook id of the user who posted the message
     author_json = JSONField(null=True, help_text='Information about the user who posted the message')
 
-    author_content_type = models.ForeignKey(ContentType, null=True, related_name='content_type_authors_facebook_%(class)ss')
+    author_content_type = models.ForeignKey(
+        ContentType, null=True, related_name='content_type_authors_%(app_label)s_%(class)ss')
     author_id = models.BigIntegerField(null=True, db_index=True)
     author = generic.GenericForeignKey('author_content_type', 'author_id')
 
