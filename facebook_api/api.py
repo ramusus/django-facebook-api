@@ -31,6 +31,9 @@ class FacebookApi(ApiAbstractBase):
     def get_consistent_token(self):
         return getattr(settings, 'FACEBOOK_API_ACCESS_TOKEN', None)
 
+    def get_tokens(self, **kwargs):
+        return AccessToken.objects.filter_active_tokens_of_provider(self.provider, **kwargs)
+
     def get_api(self, **kwargs):
         return Graph(self.get_token(**kwargs))
 
