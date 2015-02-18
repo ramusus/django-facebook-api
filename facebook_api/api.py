@@ -2,6 +2,7 @@ import time
 
 from django.conf import settings
 from facegraph import Graph, GraphException as FacebookError
+from oauth_tokens.models import AccessToken
 from oauth_tokens.api import ApiAbstractBase, Singleton
 
 __all__ = ['api_call', 'FacebookError']
