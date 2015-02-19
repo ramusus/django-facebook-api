@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+import time
 import logging
-import re
 
+import re
 import dateutil.parser
 from django.conf import settings
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
-
+from django.utils import timezone
 from . import fields
 from .api import api_call
 from .decorators import atomic
 from .signals import facebook_api_post_fetch
 
 log = logging.getLogger('facebook_api.models')
-
 
 MASTER_DATABASE = getattr(settings, 'FACEBOOK_API_MASTER_DATABASE', 'default')
 
@@ -26,10 +26,9 @@ class FacebookContentError(Exception):
 
 
 class FacebookGraphManager(models.Manager):
-
-    '''
+    """
     Facebook Graph Manager for RESTful CRUD operations
-    '''
+    """
 
     def __init__(self, remote_pk=None, resource_path='%s', *args, **kwargs):
         if '%s' not in resource_path:
@@ -43,9 +42,9 @@ class FacebookGraphManager(models.Manager):
         super(FacebookGraphManager, self).__init__(*args, **kwargs)
 
     def get_by_url(self, url):
-        '''
+        """
         Return object by url
-        '''
+        """
         m = re.findall(r'(?:https?://)?(?:www\.)?facebook\.com/(.+)/?', url)
         if not len(m):
             raise ValueError("Url should be started with http://facebook.com/")
@@ -53,9 +52,9 @@ class FacebookGraphManager(models.Manager):
         return self.get_by_slug(m[0])
 
     def get_by_slug(self, slug):
-        '''
+        """
         Return object by slug
-        '''
+        """
         if 'pages' in slug:
             parts = slug.split('/')
             if len(parts) == 3:
@@ -87,25 +86,27 @@ class FacebookGraphManager(models.Manager):
 
     @atomic
     def fetch(self, *args, **kwargs):
-        '''
+        """
         Retrieve and save object to local DB
-        '''
+        """
         result = self.get(*args, **kwargs)
         if isinstance(result, list):
             return [self.get_or_create_from_instance(instance) for instance in result]
         else:
             return self.get_or_create_from_instance(result)
 
+    def api_call(self, *args, **kwargs):
+        return api_call(self.resource_path % args[0], **kwargs)
+
     def get(self, *args, **kwargs):
-        '''
+        """
         Retrieve objects from remote server
-        '''
+        """
         extra_fields = kwargs.pop('extra_fields', {})
-#        extra_fields['fetched'] = datetime.now()
+        # extra_fields['fetched'] = datetime.now()
+        response = self.api_call(*args, **kwargs)
 
-        response = api_call(self.resource_path % args[0], **kwargs)
-
-        return self.parse_response(response.toDict(), extra_fields)
+        return self.parse_response(response, extra_fields)
 
     def parse_response(self, response, extra_fields=None):
         if isinstance(response, (list, tuple)):
@@ -142,14 +143,81 @@ class FacebookGraphManager(models.Manager):
         return instances
 
 
-class FacebookGraphModel(models.Model):
+class FacebookGraphTimelineManager(FacebookGraphManager):
+    """
+    Manager class, child of VkontakteManager for fetching objects with arguments `since`, `until`
+    """
+    timeline_cut_fieldname = 'date'
+    timeline_force_ordering = True
 
+    def get_timeline_date(self, instance):
+        return getattr(instance, self.timeline_cut_fieldname, datetime(1970, 1, 1).replace(tzinfo=timezone.utc))
+
+    @atomic
+    def get(self, *args, **kwargs):
+        """
+        Retrieve objects and return result list with respect to parameters:
+         * 'since' - excluding all items after.
+         * 'until' - excluding all items before.
+        """
+        since = kwargs.pop('since', None)
+        until = kwargs.pop('until', None)
+
+        # convert str or int -> datetime for comparing
+        if until and not isinstance(until, datetime):
+            until = datetime.utcfromtimestamp(int(until)).replace(tzinfo=timezone.utc)
+        if since and not isinstance(since, datetime):
+            since = datetime.utcfromtimestamp(int(since)).replace(tzinfo=timezone.utc)
+
+        if until and not since:
+            raise ValueError("Attribute `until` should be specified with attribute `since`")
+        if until and until < since:
+            raise ValueError("Attribute `until` should be later, than attribute `since`")
+
+        # convert datetime, str or int -> timestamp
+        for field in ['until', 'since']:
+            value = locals()[field]
+            if isinstance(value, datetime):
+                kwargs[field] = int(time.mktime(value.timetuple()))
+            elif value is not None:
+                try:
+                    kwargs[field] = int(value)
+                except TypeError:
+                    raise ValueError('Wrong type of argument %s: %s' % (field, type(value)))
+
+        result = super(FacebookGraphTimelineManager, self).get(*args, **kwargs)
+
+        if isinstance(result, list):
+
+            if self.timeline_force_ordering and result:
+                result.sort(key=self.get_timeline_date, reverse=True)
+
+            instances = []
+            for instance in result:
+
+                timeline_date = self.get_timeline_date(instance)
+
+                if timeline_date and isinstance(timeline_date, datetime):
+
+                    if since and since > timeline_date:
+                        break
+
+                    if until and until < timeline_date:
+                        continue
+
+                instances += [instance]
+            return instances
+        else:
+            return result
+
+
+class FacebookGraphModel(models.Model):
     class Meta:
         abstract = True
 
     remote_pk_field = 'id'
 
-#    fetched = models.DateTimeField(u'Обновлено', null=True, blank=True)
+    # fetched = models.DateTimeField(u'Обновлено', null=True, blank=True)
 
     objects = models.Manager()
 
@@ -169,16 +237,16 @@ class FacebookGraphModel(models.Model):
         self._external_links_to_add = {}
 
     def _substitute(self, old_instance):
-        '''
+        """
         Substitute new user with old one while updating in method Manager.get_or_create_from_instance()
         Can be overrided in child models
-        '''
+        """
         self.id = old_instance.id
 
     def parse(self, response):
-        '''
+        """
         Parse API response and define fields with values
-        '''
+        """
         for key, value in response.items():
 
             if key == self.remote_pk_field:
@@ -212,7 +280,8 @@ class FacebookGraphModel(models.Model):
                     if isinstance(field, models.ForeignKey):
                         self._foreignkeys_post_save += [(key, rel_instance)]
 
-                elif isinstance(field, (fields.CommaSeparatedCharField, models.CommaSeparatedIntegerField)) and isinstance(value, list):
+                elif isinstance(field, (fields.CommaSeparatedCharField, models.CommaSeparatedIntegerField)) and \
+                        cd isinstance(value, list):
                     value = ','.join([unicode(v) for v in value])
 
                 elif isinstance(field, (models.CharField, models.TextField)) and value:
@@ -222,9 +291,9 @@ class FacebookGraphModel(models.Model):
                 setattr(self, key, value)
 
     def save(self, *args, **kwargs):
-        '''
-        Save all related instances before or after current instance
-        '''
+        """
+        Save all related instances until or after current instance
+        """
         for field, instance in self._foreignkeys_post_save:
             instance = instance.__class__.remote.get_or_create_from_instance(instance)
             instance.save()
@@ -248,7 +317,6 @@ class FacebookGraphModel(models.Model):
 
 
 class FacebookGraphIDModel(FacebookGraphModel):
-
     graph_id = models.CharField(u'ID', max_length=70, help_text=_('Unique graph ID'), unique=True)
 
     class Meta:
@@ -260,7 +328,6 @@ class FacebookGraphIDModel(FacebookGraphModel):
 
 
 class FacebookGraphPKModelMixin:
-
     @property
     def slug(self):
         return self.graph_id
@@ -274,7 +341,6 @@ class FacebookGraphPKModelMixin:
 
 
 class FacebookGraphStrPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
-
     graph_id = models.CharField(u'ID', primary_key=True, max_length=70, help_text=_('Unique graph ID'))
 
     class Meta:
@@ -282,7 +348,6 @@ class FacebookGraphStrPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
 
 
 class FacebookGraphIntPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
-
     graph_id = models.BigIntegerField(u'ID', primary_key=True, help_text=_('Unique graph ID'))
 
     class Meta:
