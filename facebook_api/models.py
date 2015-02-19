@@ -281,7 +281,7 @@ class FacebookGraphModel(models.Model):
                         self._foreignkeys_post_save += [(key, rel_instance)]
 
                 elif isinstance(field, (fields.CommaSeparatedCharField, models.CommaSeparatedIntegerField)) and \
-                        cd isinstance(value, list):
+                        isinstance(value, list):
                     value = ','.join([unicode(v) for v in value])
 
                 elif isinstance(field, (models.CharField, models.TextField)) and value:
