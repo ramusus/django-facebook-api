@@ -92,8 +92,10 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
                 if paging_next_arg_value is None:
                     raise ValueError("Wrong response pagination value: %s, paging_next_arg_name=%s" %
                                      (paging_next, paging_next_arg_name))
-                kwargs[paging_next_arg_name] = paging_next_arg_value
-                return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
+                # only if argument is changed
+                if kwargs.get(paging_next_arg_name) != paging_next_arg_value:
+                    kwargs[paging_next_arg_name] = paging_next_arg_value
+                    return wrapper(self, all=all, instances_all=instances_all, *args, **kwargs)
 
             if return_all:
                 kwargs['instances'] = instances_all

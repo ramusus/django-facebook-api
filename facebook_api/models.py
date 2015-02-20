@@ -172,7 +172,7 @@ class FacebookGraphTimelineManager(FacebookGraphManager):
         if until and not since:
             raise ValueError("Attribute `until` should be specified with attribute `since`")
         if until and until < since:
-            raise ValueError("Attribute `until` should be later, than attribute `since`")
+            return []
 
         # convert datetime, str or int -> timestamp
         for field in ['until', 'since']:
