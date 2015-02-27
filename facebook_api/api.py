@@ -35,8 +35,8 @@ class FacebookApi(ApiAbstractBase):
     def get_tokens(self, **kwargs):
         return AccessToken.objects.filter_active_tokens_of_provider(self.provider, **kwargs)
 
-    def get_api(self, **kwargs):
-        return Graph(self.get_token(**kwargs))
+    def get_api(self, token):
+        return Graph(token)
 
     def get_api_response(self, *args, **kwargs):
         try:
