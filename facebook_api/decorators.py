@@ -55,11 +55,11 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
 
         if all:
             if isinstance(instances, QuerySet):
-                if not instances_all:
+                if instances_all is None:
                     instances_all = QuerySet().none()
                 instances_all |= instances
             elif isinstance(instances, list):
-                if not instances_all:
+                if instances_all is None:
                     instances_all = []
                 instances_all += instances
             else:
