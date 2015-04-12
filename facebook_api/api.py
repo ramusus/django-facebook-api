@@ -1,5 +1,4 @@
-import time
-
+# -*- coding: utf-8 -*-
 from django.conf import settings
 from facegraph import Graph, GraphException as FacebookError
 from oauth_tokens.models import AccessToken
@@ -24,8 +23,7 @@ class FacebookApi(ApiAbstractBase):
             self.logger.error(error)
             if self.recursion_count >= 3:
                 raise Exception(error)
-            time.sleep(1)
-            return self.repeat_call(*args, **kwargs)
+            return self.sleep_repeat_call(*args, **kwargs)
 
         return response
 
@@ -51,8 +49,7 @@ class FacebookApi(ApiAbstractBase):
 
     def handle_error_code(self, e, *args, **kwargs):
         if 'An unexpected error has occurred. Please retry your request later' in str(e):
-            time.sleep(1)
-            return self.repeat_call(*args, **kwargs)
+            return self.sleep_repeat_call(*args, **kwargs)
         else:
             return super(FacebookApi, self).handle_error_code(e, *args, **kwargs)
 
@@ -61,11 +58,15 @@ class FacebookApi(ApiAbstractBase):
         return self.repeat_call(*args, **kwargs)
 
     def handle_error_code_17(self, e, *args, **kwargs):
-        self.logger.warning("Error 'User request limit reached', try access_token of another user %s with params %s, \
-            recursion count: %d" % (self.method, kwargs, self.recursion_count))
-        time.sleep(1)
+        self.logger.warning("Error 'User request limit reached', try access_token of another user. Method %s with "
+                            "params %s, recursion count: %d" % (self.method, kwargs, self.recursion_count))
         self.used_access_tokens += [self.api.access_token]
-        return self.repeat_call(*args, **kwargs)
+        return self.sleep_repeat_call(*args, **kwargs)
+
+    def handle_error_code_4(self, e, *args, **kwargs):
+        self.logger.warning("Error 'Application request limit reached', wait for 600 secs. Method %s with params %s, "
+                            "recursion count: %d" % (self.method, kwargs, self.recursion_count))
+        return self.sleep_repeat_call(seconds=600, *args, **kwargs)
 
 
 def api_call(*args, **kwargs):
