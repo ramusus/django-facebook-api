@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
-from facegraph import Graph, GraphException as FacebookError
+from facebook import GraphAPI, GraphAPIError as FacebookError
 from oauth_tokens.models import AccessToken
 from oauth_tokens.api import ApiAbstractBase, Singleton
 
@@ -34,18 +34,10 @@ class FacebookApi(ApiAbstractBase):
         return AccessToken.objects.filter_active_tokens_of_provider(self.provider, **kwargs)
 
     def get_api(self, token):
-        return Graph(token)
+        return GraphAPI(access_token=token, version='2.3')
 
     def get_api_response(self, *args, **kwargs):
-        try:
-            return getattr(self.api, self.method)(*args, **kwargs)
-        except ValueError, e:
-            self.logger.warning("ValueError: %s registered while executing method %s with params %s" %
-                                (e, self.method, kwargs))
-            # sometimes returns this dictionary, sometimes empty response, covered by test "test_empty_result"
-            # data = {"error_code":1,"error_msg":"An unknown error occurred"}
-            # TODO: perhaps, exception should be raisen here
-            return None
+        return self.api.get_object(self.method, *args, **kwargs)
 
     def handle_error_code(self, e, *args, **kwargs):
         if 'An unexpected error has occurred. Please retry your request later' in str(e):

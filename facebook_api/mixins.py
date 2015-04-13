@@ -86,15 +86,15 @@ class LikableModelMixin(models.Model):
     @atomic
     @fetch_all(return_all=update_count_and_get_like_users, paging_next_arg_name='after')
     def fetch_likes(self, limit=1000, **kwargs):
-        '''
+        """
         Retrieve and save all likes of post
-        '''
+        """
         ids = []
         response = api_call('%s/likes' % self.graph_id, limit=limit, **kwargs)
         if response:
             log.debug('response objects count=%s, limit=%s, after=%s' %
-                      (len(response.data), limit, kwargs.get('after')))
-            for resource in response.data:
+                      (len(response['data']), limit, kwargs.get('after')))
+            for resource in response['data']:
                 try:
                     user = get_or_create_from_small_resource(resource)
                     ids += [user.pk]
@@ -123,9 +123,9 @@ class ShareableModelMixin(models.Model):
     @atomic
     @fetch_all(return_all=update_count_and_get_shares_users, paging_next_arg_name='after')
     def fetch_shares(self, limit=1000, **kwargs):
-        '''
+        """
         Retrieve and save all shares of post
-        '''
+        """
         from facebook_api.models import MASTER_DATABASE  # here, becouse cycling import
 
         ids = []
@@ -137,7 +137,7 @@ class ShareableModelMixin(models.Model):
         response = api_call('%s/sharedposts' % graph_id, **kwargs)
         if response:
             timestamps = dict(
-                [(int(post['from']['id']), datetime_parse(post['created_time'])) for post in response.data])
+                [(int(post['from']['id']), datetime_parse(post['created_time'])) for post in response['data']])
             ids_new = timestamps.keys()
             # becouse we should use local pk, instead of remote, remove it after pk -> graph_id
             ids_current = map(int, User.objects.filter(pk__in=self.shares_users.get_query_set(
@@ -147,8 +147,8 @@ class ShareableModelMixin(models.Model):
             ids_remove = set(ids_current).difference(set(ids_new))
 
             log.debug('response objects count=%s, limit=%s, after=%s' %
-                      (len(response.data), limit, kwargs.get('after')))
-            for post in response.data:
+                      (len(response['data']), limit, kwargs.get('after')))
+            for post in response['data']:
                 graph_id = int(post['from']['id'])
                 if sorted(post['from'].keys()) == ['id', 'name']:
                     try:

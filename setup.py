@@ -14,14 +14,11 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,  # because we're including media that Django needs
-    dependency_links=[
-        'https://github.com/iplatform/pyFaceGraph/tarball/master#egg=pyfacegraph-0.0.36',
-    ],
     install_requires=[
         'django',
         'django-annoying',
         'django-oauth-tokens>=0.5.0',
-        'pyfacegraph>=0.0.36',
+        'facebook-sdk>=1.1',
         'python-dateutil>=1.5',
     ],
     classifiers=[

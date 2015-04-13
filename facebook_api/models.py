@@ -7,6 +7,7 @@ import re
 import dateutil.parser
 from django.conf import settings
 from django.db import models
+from django.db.models.query import QuerySet
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
@@ -84,6 +85,9 @@ class FacebookGraphManager(models.Manager):
         instance = self.parse_response_dict(response, extra_fields)
         return self.get_or_create_from_instance(instance)
 
+    def get_or_create_from_instances_list(self, instances):
+        return self.model.objects.filter(pk__in=set([self.get_or_create_from_instance(instance).pk for instance in instances]))
+
     @atomic
     def fetch(self, *args, **kwargs):
         """
@@ -91,7 +95,9 @@ class FacebookGraphManager(models.Manager):
         """
         result = self.get(*args, **kwargs)
         if isinstance(result, list):
-            return [self.get_or_create_from_instance(instance) for instance in result]
+            return self.get_or_create_from_instances_list(result)
+        elif isinstance(result, QuerySet):
+            return result
         else:
             return self.get_or_create_from_instance(result)
 
@@ -103,8 +109,11 @@ class FacebookGraphManager(models.Manager):
         Retrieve objects from remote server
         """
         extra_fields = kwargs.pop('extra_fields', {})
-        # extra_fields['fetched'] = datetime.now()
-        response = self.api_call(*args, **kwargs)
+        extra_fields['fetched'] = timezone.now()
+        self.response = self.api_call(*args, **kwargs)
+
+        # if bunch of posts -> return data attribute, if one -> just return response
+        response = self.response['data'] if 'data' in self.response else self.response
 
         return self.parse_response(response, extra_fields)
 
