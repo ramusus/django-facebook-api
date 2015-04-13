@@ -309,7 +309,11 @@ class FacebookGraphModel(models.Model):
             setattr(self, field, instance)
         self._foreignkeys_post_save = []
 
-        super(FacebookGraphModel, self).save(*args, **kwargs)
+        try:
+            super(FacebookGraphModel, self).save(*args, **kwargs)
+        except Exception as e:
+            import sys
+            raise type(e), type(e)(e.message + ' while saving %s' % self.__dict__), sys.exc_info()[2]
 
         for field, instance in self._external_links_post_save:
             # set foreignkey to the main instance
@@ -326,7 +330,7 @@ class FacebookGraphModel(models.Model):
 
 
 class FacebookGraphIDModel(FacebookGraphModel):
-    graph_id = models.CharField(u'ID', max_length=70, help_text=_('Unique graph ID'), unique=True)
+    graph_id = models.CharField(u'ID', max_length=100, help_text=_('Unique graph ID'), unique=True)
 
     class Meta:
         abstract = True
@@ -336,7 +340,7 @@ class FacebookGraphIDModel(FacebookGraphModel):
         return self.graph_id
 
 
-class FacebookGraphPKModelMixin:
+class FacebookGraphPKModelMixin(object):
     @property
     def slug(self):
         return self.graph_id
@@ -350,7 +354,7 @@ class FacebookGraphPKModelMixin:
 
 
 class FacebookGraphStrPKModel(FacebookGraphPKModelMixin, FacebookGraphModel):
-    graph_id = models.CharField(u'ID', primary_key=True, max_length=70, help_text=_('Unique graph ID'))
+    graph_id = models.CharField(u'ID', primary_key=True, max_length=100, help_text=_('Unique graph ID'))
 
     class Meta:
         abstract = True
