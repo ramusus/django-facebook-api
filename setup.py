@@ -18,7 +18,7 @@ setup(
         'django',
         'django-annoying',
         'django-oauth-tokens>=0.5.0',
-        'facebook-sdk>=1.1',
+        'facebook-sdk>=1.0.0a0',
         'python-dateutil>=1.5',
     ],
     classifiers=[
