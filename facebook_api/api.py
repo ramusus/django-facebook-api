@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
-from facebook import GraphAPI, GraphAPIError as FacebookError
+from facebook import GraphAPI, GraphAPIError
 from oauth_tokens.models import AccessToken
 from oauth_tokens.api import ApiAbstractBase, Singleton
 
 __all__ = ['api_call', 'FacebookError']
+
+
+class FacebookError(GraphAPIError):
+    @property
+    def code(self):
+        return self.type
 
 
 class FacebookApi(ApiAbstractBase):
