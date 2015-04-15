@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
-from facebook import GraphAPI, GraphAPIError
+from facebook import GraphAPI, GraphAPIError as FacebookError
 from oauth_tokens.models import AccessToken
 from oauth_tokens.api import ApiAbstractBase, Singleton
 
 __all__ = ['api_call', 'FacebookError']
-
-
-class FacebookError(GraphAPIError):
-    @property
-    def code(self):
-        return self.type
 
 
 class FacebookApi(ApiAbstractBase):
@@ -46,6 +40,7 @@ class FacebookApi(ApiAbstractBase):
         return self.api.get_object(self.method, *args, **kwargs)
 
     def handle_error_code(self, e, *args, **kwargs):
+        e.code = e.type
         if 'An unexpected error has occurred. Please retry your request later' in str(e) \
                 or 'Unsupported get request. Please read the Graph API documentation' in str(e):
             return self.sleep_repeat_call(*args, **kwargs)
