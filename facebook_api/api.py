@@ -46,14 +46,21 @@ class FacebookApi(ApiAbstractBase):
         return self.api.get_object(self.method, *args, **kwargs)
 
     def handle_error_code(self, e, *args, **kwargs):
-        if 'An unexpected error has occurred. Please retry your request later' in str(e):
+        if 'An unexpected error has occurred. Please retry your request later' in str(e) \
+                or 'Unsupported get request. Please read the Graph API documentation' in str(e):
             return self.sleep_repeat_call(*args, **kwargs)
         else:
             return super(FacebookApi, self).handle_error_code(e, *args, **kwargs)
 
-    def handle_error_code_190(self, e, *args, **kwargs):
-        self.update_token()
-        return self.repeat_call(*args, **kwargs)
+    def handle_error_code_4(self, e, *args, **kwargs):
+        self.logger.warning("Error 'Application request limit reached', wait for 600 secs. Method %s with params %s, "
+                            "recursion count: %d" % (self.method, kwargs, self.recursion_count))
+        return self.sleep_repeat_call(seconds=600, *args, **kwargs)
+
+    def handle_error_code_12(self, e, *args, **kwargs):
+        self.logger.error("Error '%s'. Method %s with params %s, recursion count: %d" % (
+            e, self.method, kwargs, self.recursion_count))
+        raise e
 
     def handle_error_code_17(self, e, *args, **kwargs):
         self.logger.warning("Error 'User request limit reached', try access_token of another user. Method %s with "
@@ -61,11 +68,9 @@ class FacebookApi(ApiAbstractBase):
         self.used_access_tokens += [self.api.access_token]
         return self.sleep_repeat_call(*args, **kwargs)
 
-    def handle_error_code_4(self, e, *args, **kwargs):
-        self.logger.warning("Error 'Application request limit reached', wait for 600 secs. Method %s with params %s, "
-                            "recursion count: %d" % (self.method, kwargs, self.recursion_count))
-        return self.sleep_repeat_call(seconds=600, *args, **kwargs)
-
+    def handle_error_code_190(self, e, *args, **kwargs):
+        self.update_token()
+        return self.repeat_call(*args, **kwargs)
 
 def api_call(*args, **kwargs):
     api = FacebookApi()
