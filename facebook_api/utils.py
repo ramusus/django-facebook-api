@@ -40,11 +40,11 @@ def get_or_create_from_small_resource(resource):
         if 'category_list' in defaults:
             del defaults['category_list']
         return Page.objects.get_or_create(graph_id=resource['id'], defaults=defaults)[0]
-    elif keys == ['id', 'name']:
-        # resource is a user
-        return User.objects.get_or_create(graph_id=resource['id'], defaults=defaults)[0]
     elif keys == ['id', 'name', 'namespace']:
         # resource is a application
         return Application.objects.get_or_create(graph_id=resource['id'], defaults=defaults)[0]
+    elif keys == ['id', 'name'] or keys == ['id']:
+        # resource is a user
+        return User.objects.get_or_create(graph_id=resource['id'], defaults=defaults)[0]
     else:
-        raise UnknownResourceType("Resource with strange keys: %s" % keys)
+        raise UnknownResourceType("Strange structure of resource: %s" % resource)
