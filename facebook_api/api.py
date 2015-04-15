@@ -13,6 +13,10 @@ class FacebookApi(ApiAbstractBase):
 
     provider = 'facebook'
     error_class = FacebookError
+    sleep_repeat_error_messages = [
+        'An unexpected error has occurred. Please retry your request later',
+        'Unsupported get request. Please read the Graph API documentation',
+    ]
 
     def call(self, method, methods_access_tag=None, *args, **kwargs):
         response = super(FacebookApi, self).call(method, methods_access_tag=methods_access_tag, *args, **kwargs)
@@ -39,8 +43,10 @@ class FacebookApi(ApiAbstractBase):
     def get_api_response(self, *args, **kwargs):
         return self.api.get_object(self.method, *args, **kwargs)
 
+    def get_error_code(self, e):
+        return e.type
+
     def handle_error_code(self, e, *args, **kwargs):
-        e.code = e.type
         if 'An unexpected error has occurred. Please retry your request later' in str(e) \
                 or 'Unsupported get request. Please read the Graph API documentation' in str(e):
             return self.sleep_repeat_call(*args, **kwargs)
