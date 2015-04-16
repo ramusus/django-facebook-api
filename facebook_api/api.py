@@ -6,6 +6,15 @@ from oauth_tokens.api import ApiAbstractBase, Singleton
 
 __all__ = ['api_call', 'FacebookError']
 
+@property
+def code(self):
+    try:
+        return self.result['error']['code']
+    except KeyError:
+        return self.type
+
+FacebookError.code = code
+
 
 class FacebookApi(ApiAbstractBase):
 
@@ -42,9 +51,6 @@ class FacebookApi(ApiAbstractBase):
 
     def get_api_response(self, *args, **kwargs):
         return self.api.get_object(self.method, *args, **kwargs)
-
-    def get_error_code(self, e):
-        return e.type
 
     def handle_error_code(self, e, *args, **kwargs):
         if 'An unexpected error has occurred. Please retry your request later' in str(e) \
