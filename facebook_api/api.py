@@ -10,7 +10,7 @@ __all__ = ['api_call', 'FacebookError']
 def code(self):
     try:
         return self.result['error']['code']
-    except KeyError:
+    except (KeyError, TypeError):
         return self.type
 
 FacebookError.code = code
