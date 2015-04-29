@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
+import sys
+
 from django.conf import settings
 from facebook import GraphAPI, GraphAPIError as FacebookError
-from oauth_tokens.models import AccessToken
 from oauth_tokens.api import ApiAbstractBase, Singleton
+from oauth_tokens.models import AccessToken
 
 __all__ = ['api_call', 'FacebookError']
+
 
 @property
 def code(self):
@@ -13,11 +16,11 @@ def code(self):
     except (KeyError, TypeError):
         return self.type
 
+
 FacebookError.code = code
 
 
 class FacebookApi(ApiAbstractBase):
-
     __metaclass__ = Singleton
 
     provider = 'facebook'
@@ -27,6 +30,7 @@ class FacebookApi(ApiAbstractBase):
     def call(self, method, methods_access_tag=None, *args, **kwargs):
         response = super(FacebookApi, self).call(method, methods_access_tag=methods_access_tag, *args, **kwargs)
 
+        # TODO: check if its heritage of previous api lib pyfacegraph
         if getattr(response, 'error_code', None):
             error = "Error %s: %s returned while executing method %s with params %s" % (
                 response.error_code, response.error_msg, self.method, kwargs)
@@ -36,6 +40,16 @@ class FacebookApi(ApiAbstractBase):
             return self.sleep_repeat_call(*args, **kwargs)
 
         return response
+
+    def handle_error_code(self, e, *args, **kwargs):
+        try:
+            return super(FacebookApi, self).handle_error_code(e, *args, **kwargs)
+        except self.error_class, e:
+            if 'Unsupported get request. Please read the Graph API documentation at' in e.message:
+                raise type(e), type(e)(e.message + ' while execution method %s with args %s, kwargs %s' % (
+                    self.method, args, kwargs)), sys.exc_info()[2]
+            else:
+                raise e
 
     def get_consistent_token(self):
         return getattr(settings, 'FACEBOOK_API_ACCESS_TOKEN', None)
@@ -68,6 +82,7 @@ class FacebookApi(ApiAbstractBase):
     def handle_error_code_190(self, e, *args, **kwargs):
         self.update_token()
         return self.repeat_call(*args, **kwargs)
+
 
 def api_call(*args, **kwargs):
     api = FacebookApi()
