@@ -53,6 +53,15 @@ class FacebookApi(ApiAbstractBase):
     def get_api_response(self, *args, **kwargs):
         return self.api.get_object(self.method, *args, **kwargs)
 
+    def handle_error_code_1(self, e, *args, **kwargs):
+        if 'limit' in kwargs:
+            self.logger.warning("Error 'An unknown error has occurred.', decrease limit. Method %s with params %s, "
+                                "recursion count: %d" % (self.method, kwargs, self.recursion_count))
+            kwargs['limit'] /= 2
+            return self.repeat_call(*args, **kwargs)
+        else:
+            raise e
+
     def handle_error_code_4(self, e, *args, **kwargs):
         self.logger.warning("Error 'Application request limit reached', wait for 600 secs. Method %s with params %s, "
                             "recursion count: %d" % (self.method, kwargs, self.recursion_count))
