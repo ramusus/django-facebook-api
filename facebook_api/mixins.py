@@ -83,7 +83,10 @@ class LikableModelMixin(models.Model):
         self.save()
         return instances
 
-    @atomic
+    # TODO: commented, becouse if many processes fetch_likes, got errors
+    # DatabaseError: deadlock detected
+    # DETAIL:  Process 27235 waits for ShareLock on transaction 3922627359; blocked by process 27037.
+    # @atomic
     @fetch_all(return_all=update_count_and_get_like_users, paging_next_arg_name='after')
     def fetch_likes(self, limit=1000, **kwargs):
         """
