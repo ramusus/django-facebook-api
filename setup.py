@@ -17,7 +17,7 @@ setup(
     install_requires=[
         'django',
         'django-annoying',
-        'django-oauth-tokens>=0.5.1',
+        'django-oauth-tokens>=0.5.2',
         'facebook-sdk>=1.0.0a0',
         'python-dateutil>=1.5',
     ],

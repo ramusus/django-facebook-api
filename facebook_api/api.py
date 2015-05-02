@@ -60,7 +60,7 @@ class FacebookApi(ApiAbstractBase):
             kwargs['limit'] /= 2
             return self.repeat_call(*args, **kwargs)
         else:
-            raise e
+            return self.log_and_raise(e, *args, **kwargs)
 
     def handle_error_code_4(self, e, *args, **kwargs):
         self.logger.warning("Error 'Application request limit reached', wait for 600 secs. Method %s with params %s, "
@@ -68,9 +68,7 @@ class FacebookApi(ApiAbstractBase):
         return self.sleep_repeat_call(seconds=600, *args, **kwargs)
 
     def handle_error_code_12(self, e, *args, **kwargs):
-        self.logger.error("Error '%s'. Method %s with params %s, recursion count: %d" % (
-            e, self.method, kwargs, self.recursion_count))
-        raise e
+        return self.log_and_raise(self, e, *args, **kwargs)
 
     def handle_error_code_17(self, e, *args, **kwargs):
         self.logger.warning("Error 'User request limit reached', try access_token of another user. Method %s with "
