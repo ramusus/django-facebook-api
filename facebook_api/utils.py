@@ -21,17 +21,6 @@ def get_or_create_from_small_resource(resource):
     from facebook_pages.models import Page
     from facebook_users.models import User
 
-    try:
-        return Page.objects.get(graph_id=resource['id'])
-    except Page.DoesNotExist:
-        try:
-            return User.objects.get(graph_id=resource['id'])
-        except User.DoesNotExist:
-            try:
-                return Application.objects.get(graph_id=resource['id'])
-            except Application.DoesNotExist:
-                pass
-
     keys = sorted(resource.keys())
     defaults = dict(resource)
     del defaults['id']
