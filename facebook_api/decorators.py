@@ -71,11 +71,15 @@ def fetch_all(func, return_all=None, always_all=False, paging_next_arg_name=None
             if response:
                 try:
                     paging_next = response['paging']['next']
+                except KeyError:
+                    pass
+                try:
                     paging_cursors = response['paging']['cursors']
                 except KeyError:
                     pass
 
-            if paging_next_arg_name and paging_next and paging_next_arg_name in paging_next:
+            if paging_next_arg_name and paging_next and paging_next_arg_name in paging_next \
+                    or paging_next_arg_name and paging_cursors and paging_next_arg_name in paging_cursors:
                 paging_next_arg_value = None
                 # at first look in cursors
                 if paging_cursors:

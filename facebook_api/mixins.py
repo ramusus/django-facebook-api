@@ -133,11 +133,7 @@ class ShareableModelMixin(models.Model):
 
         ids = []
 
-        graph_id = self.graph_id
-        if isinstance(graph_id, string_types):
-            graph_id = graph_id.split('_').pop()
-
-        response = api_call('%s/sharedposts' % graph_id, **kwargs)
+        response = api_call('%s/sharedposts' % self.graph_id, **kwargs)
         if response:
             timestamps = dict(
                 [(int(post['from']['id']), datetime_parse(post['created_time'])) for post in response['data']])

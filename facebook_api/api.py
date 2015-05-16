@@ -68,7 +68,7 @@ class FacebookApi(ApiAbstractBase):
         return self.sleep_repeat_call(seconds=600, *args, **kwargs)
 
     def handle_error_code_12(self, e, *args, **kwargs):
-        return self.log_and_raise(self, e, *args, **kwargs)
+        return self.log_and_raise(e, *args, **kwargs)
 
     def handle_error_code_17(self, e, *args, **kwargs):
         self.logger.warning("Error 'User request limit reached', try access_token of another user. Method %s with "
