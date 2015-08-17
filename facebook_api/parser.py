@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 import re
 
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 from django.conf import settings
 from oauth_tokens.providers.facebook import FacebookAccessToken
 import requests
