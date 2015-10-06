@@ -1,10 +1,12 @@
-# Django Facebook Graph API
+Django Facebook Graph API
+=========================
 
 [![PyPI version](https://badge.fury.io/py/django-facebook-api.png)](http://badge.fury.io/py/django-facebook-api) [![Build Status](https://travis-ci.org/ramusus/django-facebook-api.png?branch=master)](https://travis-ci.org/ramusus/django-facebook-api) [![Coverage Status](https://coveralls.io/repos/ramusus/django-facebook-api/badge.png?branch=master)](https://coveralls.io/r/ramusus/django-facebook-api)
 
 Application for interacting with Facebook Graph API objects using Django model interface
 
-## Installation
+Installation
+------------
 
     pip install django-facebook-api
 
@@ -24,23 +26,25 @@ Add into `settings.py` lines:
     OAUTH_TOKENS_FACEBOOK_USERNAME = ''                                # user login
     OAUTH_TOKENS_FACEBOOK_PASSWORD = ''                                # user password
 
-## Usage examples
+Usage examples
+--------------
 
 ### Simple API Graph request
 
     >>> from facebook_api.api import api_call
-    >>> api_call('zuck')
-    Node(<Graph(u'https://graph.facebook.com/zuck') at 0xb1cbfac>,
-         {'first_name': 'Mark',
-          'gender': 'male',
-          'id': '4',
-          'last_name': 'Zuckerberg',
-          'link': 'http://www.facebook.com/zuck',
-          'locale': 'en_US',
-          'name': 'Mark Zuckerberg',
-          'updated_time': '2013-03-13T20:36:43+0000',
-          'username': 'zuck'})
+    >>> api_call('4')
+    {u'first_name': u'Mark',
+     u'id': u'4',
+     u'last_name': u'Zuckerberg',
+     u'link': u'https://www.facebook.com/app_scoped_user_id/10101334100533631/',
+     u'name': u'Mark Zuckerberg',
+     u'updated_time': u'2015-09-29T14:42:17+0000'}
 
-    >>> api_call('zuck', fields='id,name')
-    Node(<Graph(u'https://graph.facebook.com/zuck') at 0xb1d2a8c>,
-         {'id': '4', 'name': 'Mark Zuckerberg'})
+    >>> api_call('4', fields='id,name')
+    {u'id': u'4', u'name': u'Mark Zuckerberg'}
+
+Licensing
+---------
+
+This library uses the [Apache License, version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html). 
+Please see the library's individual files for more information.
