@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import re
+import logging
 
 from django.db.models.query import QuerySet
 from django.utils.functional import wraps
@@ -21,6 +22,11 @@ try:
     from django.db.transaction import atomic
 except ImportError:
     from django.db.transaction import commit_on_success as atomic
+
+from .api import FacebookError
+
+
+log = logging.getLogger('facebook_api.models')
 
 
 def opt_arguments(func):
@@ -38,6 +44,35 @@ def opt_arguments(func):
                 return func(inner_func, *args, **kwargs)
             return meta_func
     return meta_wrapper
+
+
+@opt_arguments
+def reduce_data_amount(func):
+    """
+    Class method decorator for handling FacebookGraphAPIError:
+        Please reduce the amount of data you're asking for, then retry your request.
+    Usage:
+
+        @reduce_data_amount
+        @fetch_all(....)
+        def fetch_something(self, ..., *kwargs):
+        ....
+    """
+    def wrapper(self, *args, **kwargs):
+        try:
+            instances = func(self, *args, **kwargs)
+        except FacebookError as e:
+            if e.message == "Please reduce the amount of data you're asking for, then retry your request" \
+                and 'limit' in kwargs:
+                    kwargs['limit'] = kwargs['limit'] / 2
+                    log.debug('Reduced amount of asking data in twice. args=%s, kwargs=%s' % (args, kwargs))
+                    return wrapper(self, *args, **kwargs)
+            else:
+                raise
+
+        return instances
+
+    return wraps(func)(wrapper)
 
 
 @opt_arguments

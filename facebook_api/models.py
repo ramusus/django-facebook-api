@@ -26,9 +26,10 @@ from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
 from django.utils import timezone
+
 from . import fields
 from .api import api_call
-from .decorators import atomic
+from .decorators import atomic, reduce_data_amount
 from .signals import facebook_api_post_fetch
 
 log = logging.getLogger('facebook_api.models')
@@ -177,6 +178,7 @@ class FacebookGraphTimelineManager(FacebookGraphManager):
         return getattr(instance, self.timeline_cut_fieldname, datetime(1970, 1, 1).replace(tzinfo=timezone.utc))
 
     @atomic
+    @reduce_data_amount
     def get(self, *args, **kwargs):
         """
         Retrieve objects and return result list with respect to parameters:
