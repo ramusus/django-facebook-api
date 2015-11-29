@@ -171,7 +171,7 @@ class FacebookGraphTimelineManager(FacebookGraphManager):
     """
     Manager class, child of VkontakteManager for fetching objects with arguments `since`, `until`
     """
-    timeline_cut_fieldname = 'date'
+    timeline_cut_fieldname = 'created_time'
     timeline_force_ordering = True
 
     def get_timeline_date(self, instance):
