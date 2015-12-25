@@ -40,6 +40,7 @@ class FacebookApi(ApiAbstractBase):
     provider = 'facebook'
     error_class = FacebookError
     sleep_repeat_error_messages = ['An unexpected error has occurred. Please retry your request later']
+    version = 2.3
 
     def call(self, method, methods_access_tag=None, *args, **kwargs):
         response = super(FacebookApi, self).call(method, methods_access_tag=methods_access_tag, *args, **kwargs)
@@ -62,7 +63,7 @@ class FacebookApi(ApiAbstractBase):
         return AccessToken.objects.filter_active_tokens_of_provider(self.provider, **kwargs)
 
     def get_api(self, token):
-        return GraphAPI(access_token=token, version='2.3')
+        return GraphAPI(access_token=token, version=self.version)
 
     def get_api_response(self, *args, **kwargs):
         return self.api.get_object(self.method, *args, **kwargs)
@@ -82,6 +83,8 @@ class FacebookApi(ApiAbstractBase):
         return self.sleep_repeat_call(seconds=600, *args, **kwargs)
 
     def handle_error_code_12(self, e, *args, **kwargs):
+        # Error '(#12) notes API is deprecated for versions v2.0 and higher'.
+        # Method 918051514883799/sharedposts, args: (), kwargs: {'methods_access_tag': None}, recursion count: 0
         return self.log_and_raise(e, *args, **kwargs)
 
     def handle_error_code_17(self, e, *args, **kwargs):
@@ -104,4 +107,6 @@ class FacebookApi(ApiAbstractBase):
 
 def api_call(*args, **kwargs):
     api = FacebookApi()
+    if 'version' in kwargs:
+        api.version = kwargs.pop('version')
     return api.call(*args, **kwargs)
