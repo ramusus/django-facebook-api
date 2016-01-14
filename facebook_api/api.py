@@ -93,6 +93,7 @@ class FacebookApi(ApiAbstractBase):
         self.used_access_tokens += [self.api.access_token]
         return self.sleep_repeat_call(*args, **kwargs)
 
+    # commented, because lead to endless loop
     # def handle_error_code_100(self, e, *args, **kwargs):
     #     self.logger.error("Error 'Unsupported get request. Please read the Graph API documentation'. Method %s with "
     #                       "params %s, access_token: %s, recursion count: %d" % (
