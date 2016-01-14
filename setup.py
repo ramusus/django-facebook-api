@@ -21,7 +21,7 @@ setup(
         'facebook-sdk>=1.0.0a0',
         'python-dateutil>=1.5',
     ],
-    dependency_links=['https://github.com/pythonforfacebook/facebook-sdk/tarball/master#egg=facebook-sdk'],
+    dependency_links=['https://github.com/pythonforfacebook/facebook-sdk/tarball/master#egg=facebook-sdk-1.0.0-alpha'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
