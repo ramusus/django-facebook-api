@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from social_api.tests import SocialApiTestCase
+from social_api.testcase import SocialApiTestCase
 
 from .api import api_call, FacebookApi
 
