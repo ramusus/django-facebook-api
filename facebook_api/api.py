@@ -13,12 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import sys
-
-from django.conf import settings
 from facebook import GraphAPI, GraphAPIError as FacebookError
-from oauth_tokens.api import ApiAbstractBase, Singleton
-from oauth_tokens.models import AccessToken
+from social_api.api import ApiAbstractBase, Singleton
 
 __all__ = ['api_call', 'FacebookError']
 
@@ -55,9 +51,6 @@ class FacebookApi(ApiAbstractBase):
             return self.sleep_repeat_call(*args, **kwargs)
 
         return response
-
-    def get_tokens(self, **kwargs):
-        return AccessToken.objects.filter_active_tokens_of_provider(self.provider, **kwargs)
 
     def get_api(self, token):
         return GraphAPI(access_token=token, version=self.version)

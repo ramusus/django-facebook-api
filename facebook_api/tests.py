@@ -13,27 +13,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from django.test import TestCase
+from social_api.tests import SocialApiTestCase
 
 from .api import api_call, FacebookApi
 
+TOKEN = 'CAAGPdaGocPIBANyHk4GO3HJYhNalf78scXf5CprODAIYELOjW7DBkYG6uV5hip71fEv19jZBrQdN1nUhsrcvghxKtuxEIMgPqr4XUQMnvx8SApZBU3C6ccyknaNunFqgMbZB0VQFaYukP6NEGDfvcZBbRk6DdxnCZCO7z20KkBd3ZB5Rusgskxx0S2ARZCfN8KZAzgAq3F3KSgZDZD'  # noqa
 
-class FacebookApiTest(TestCase):
+
+class FacebookApiTestCase(SocialApiTestCase):
+    provider = 'facebook'
+    token = TOKEN
+
+
+class FacebookApiTest(FacebookApiTestCase):
 
     def test_api_instance_singleton(self):
-
         self.assertEqual(id(FacebookApi()), id(FacebookApi()))
 
     def test_request(self):
+        response = api_call('me')
+        self.assertEqual(response['id'], '100005428301237')
+        self.assertEqual(response['last_name'], 'Djangov')
+        self.assertEqual(response['first_name'], 'Travis')
+        self.assertEqual(response['gender'], 'male')
 
-        response = api_call('zuck')
-        self.assertEqual(response.id, '4')
-        self.assertEqual(response.last_name, 'Zuckerberg')
-        self.assertEqual(response.first_name, 'Mark')
-        self.assertEqual(response.gender, 'male')
-
-    def test_empty_result(self):
-
-        # strange error sometimes appear
-        with self.assertRaises(Exception):
-            api_call('135161613191462/posts', **{'limit': 250, 'since': 1416258000})
+    # def test_empty_result(self):
+    #     # strange error sometimes appear
+    #     with self.assertRaises(Exception):
+    #         api_call('135161613191462/posts', **{'limit': 250, 'since': 1416258000})
