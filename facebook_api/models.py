@@ -23,7 +23,6 @@ from django.conf import settings
 from django.db import models
 from django.db.models.query import QuerySet
 from django.db.models.fields import FieldDoesNotExist
-from django.db.models.related import RelatedObject
 from django.utils.translation import ugettext as _
 from django.utils import timezone
 
@@ -31,6 +30,12 @@ from . import fields
 from .api import api_call
 from .decorators import atomic, reduce_data_amount
 from .signals import facebook_api_post_fetch
+
+try:
+    from django.db.models.related import RelatedObject as ForeignObjectRel
+except ImportError:
+    # django 1.8 +
+    from django.db.models.fields.related import ForeignObjectRel
 
 log = logging.getLogger('facebook_api.models')
 
@@ -283,7 +288,7 @@ class FacebookGraphModel(models.Model):
                 log.debug('Field with name "%s" doesn\'t exist in the model %s' % (key, type(self)))
                 continue
 
-            if isinstance(field, RelatedObject) and value:
+            if isinstance(field, ForeignObjectRel) and value:
                 for item in value:
                     rel_instance = field.model()
                     rel_instance.parse(dict(item))
