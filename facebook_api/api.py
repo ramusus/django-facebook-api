@@ -92,7 +92,9 @@ class FacebookApi(ApiAbstractBase):
     #     return self.repeat_call(*args, **kwargs)
 
     def handle_error_code_190(self, e, *args, **kwargs):
-        self.update_token()
+        self.logger.error("Error validating access token: You cannot access the app till you log in to "
+                          "www.facebook.com and follow the instructions given.")
+        self.used_access_tokens += [self.api.access_token]
         return self.repeat_call(*args, **kwargs)
 
 

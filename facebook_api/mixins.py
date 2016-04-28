@@ -19,7 +19,6 @@ from dateutil.parser import parse as datetime_parse
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils.six import string_types
 from facebook_users.models import User
 from m2m_history.fields import ManyToManyHistoryField
 
