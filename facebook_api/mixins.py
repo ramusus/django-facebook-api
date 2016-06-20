@@ -82,19 +82,100 @@ class LikableModelMixin(models.Model):
     likes_users = ManyToManyHistoryField(User, related_name='like_%(class)ss')
     likes_count = models.PositiveIntegerField(null=True, help_text='The number of likes of this item')
 
+    loves_users = ManyToManyHistoryField(User, related_name='love_%(class)ss')
+    loves_count = models.PositiveIntegerField(null=True, help_text='The number of loves of this item')
+
+    wows_users = ManyToManyHistoryField(User, related_name='wow_%(class)ss')
+    wows_count = models.PositiveIntegerField(null=True, help_text='The number of wows of this item')
+
+    hahas_users = ManyToManyHistoryField(User, related_name='haha_%(class)ss')
+    hahas_count = models.PositiveIntegerField(null=True, help_text='The number of hahas of this item')
+
+    sads_users = ManyToManyHistoryField(User, related_name='sad_%(class)ss')
+    sads_count = models.PositiveIntegerField(null=True, help_text='The number of sads of this item')
+
+    angrys_users = ManyToManyHistoryField(User, related_name='angry_%(class)ss')
+    angrys_count = models.PositiveIntegerField(null=True, help_text='The number of angrys of this item')
+
+    thankfuls_users = ManyToManyHistoryField(User, related_name='thankful_%(class)ss')
+    thankfuls_count = models.PositiveIntegerField(null=True, help_text='The number of thankfuls of this item')
+
     class Meta:
         abstract = True
 
     def parse(self, response):
         if 'like_count' in response:
             response['likes_count'] = response.pop('like_count')
+
+        if 'love_count' in response:
+            response['loves_count'] = response.pop('love_count')
+
+        if 'wow_count' in response:
+            response['wows_count'] = response.pop('wow_count')
+
+        if 'haha_count' in response:
+            response['hahas_count'] = response.pop('haha_count')
+
+        if 'sad_count' in response:
+            response['sads_count'] = response.pop('sad_count')
+
+        if 'angry_count' in response:
+            response['angrys_count'] = response.pop('angry_count')
+
+        if 'thankful_count' in response:
+            response['thankfuls_count'] = response.pop('thankful_count')
+
         super(LikableModelMixin, self).parse(response)
 
     def update_count_and_get_like_users(self, instances, *args, **kwargs):
         self.likes_users = instances
         self.likes_count = instances.count()
+
         self.save()
         return instances
+
+    def update_count_and_get_love_users(self, instances, *args, **kwargs):
+        self.loves_users = instances
+        self.loves_count = instances.count()
+
+        self.save()
+        return instances
+
+    def update_count_and_get_wow_users(self, instances, *args, **kwargs):
+        self.wows_users = instances
+        self.wows_count = instances.count()
+
+        self.save()
+        return instances
+
+    def update_count_and_get_haha_users(self, instances, *args, **kwargs):
+        self.hahas_users = instances
+        self.hahas_count = instances.count()
+
+        self.save()
+        return instances
+
+    def update_count_and_get_sad_users(self, instances, *args, **kwargs):
+        self.sads_users = instances
+        self.sads_count = instances.count()
+
+        self.save()
+        return instances
+
+    def update_count_and_get_angry_users(self, instances, *args, **kwargs):
+        self.angrys_users = instances
+        self.angrys_count = instances.count()
+
+        self.save()
+        return instances
+
+    def update_count_and_get_thankful_users(self, instances, *args, **kwargs):
+        self.thankfuls_users = instances
+        self.thankfuls_count = instances.count()
+
+        self.save()
+        return instances
+
 
     # TODO: commented, becouse if many processes fetch_likes, got errors
     # DatabaseError: deadlock detected
@@ -118,6 +199,32 @@ class LikableModelMixin(models.Model):
                     continue
 
         return User.objects.filter(pk__in=ids), response
+
+    @fetch_all(return_all=update_count_and_get_like_users, paging_next_arg_name='after')
+    def fetch_reactions(self, limit=1000, **kwargs):
+        """
+        Retrieve and save all reactions of post
+        """
+        ids = {}
+        types = ['like', 'love', 'wow', 'haha', 'sad', 'angry', 'thankful']
+        for id_type in types:
+            ids[id_type] = []
+
+        response = api_call('%s/reactions' % self.graph_id, limit=limit, **kwargs)
+        if response:
+            log.debug('response objects count=%s, limit=%s, after=%s' %
+                      (len(response['data']), limit, kwargs.get('after')))
+            for resource in response['data']:
+                try:
+                    user = get_or_create_from_small_resource(resource)
+                    ids[resource['type']] += [user.pk]
+
+                except UnknownResourceType:
+                    continue
+
+        #return User.objects.filter(pk__in=ids), response
+        for id_type in types:
+            fetch_all(return_all=self.update_count_and_get_like_users, paging_next_arg_name='after')(User.objects.filter(pk__in=ids[id_type]), response)
 
 
 class ShareableModelMixin(models.Model):
