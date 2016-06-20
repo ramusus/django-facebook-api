@@ -200,7 +200,7 @@ class LikableModelMixin(models.Model):
 
         return User.objects.filter(pk__in=ids), response
 
-    @fetch_all(return_all=update_count_and_get_like_users, paging_next_arg_name='after')
+    #@fetch_all(return_all=update_count_and_get_like_users, paging_next_arg_name='after')
     def fetch_reactions(self, limit=1000, **kwargs):
         """
         Retrieve and save all reactions of post
