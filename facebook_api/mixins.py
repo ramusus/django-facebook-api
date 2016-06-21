@@ -200,13 +200,12 @@ class LikableModelMixin(models.Model):
 
         return User.objects.filter(pk__in=ids), response
 
-    #@fetch_all(return_all=update_count_and_get_like_users, paging_next_arg_name='after')
     def fetch_reactions(self, limit=1000, **kwargs):
         """
         Retrieve and save all reactions of post
         """
         ids = {}
-        types = ['like', 'love', 'wow', 'haha', 'sad', 'angry', 'thankful']
+        types = ['LIKE', 'LOVE', 'WOW', 'HAHA', 'SAD', 'ANGRY', 'THANKFUL']
         for id_type in types:
             ids[id_type] = []
 
@@ -222,9 +221,46 @@ class LikableModelMixin(models.Model):
                 except UnknownResourceType:
                     continue
 
-        #return User.objects.filter(pk__in=ids), response
+        def get_user_ids(self, ids, response):
+            return User.objects.filter(pk__in=ids), response
+
+        result = {}
+
         for id_type in types:
-            fetch_all(return_all=self.update_count_and_get_like_users, paging_next_arg_name='after')(User.objects.filter(pk__in=ids[id_type]), response)
+            count_method = getattr(self, 'update_count_and_get_%s_users' % id_type.lower())
+            fetch = fetch_all(return_all=count_method, paging_next_arg_name='after')(get_user_ids)
+
+            result[id_type] = fetch(self, ids[id_type], response)
+
+        return result
+
+
+    def fetch_reactions_by_type(self, reaction_type='like', version=2.6, **kwargs):
+
+        def fetch_reaction(self, limit=1000, **kwargs):
+            """
+            Retrieve and save all reactions of post
+            """
+            ids = []
+            response = api_call('%s/reactions' % self.graph_id, limit=limit, **kwargs)
+            if response:
+                log.debug('response objects count=%s, limit=%s, after=%s' %
+                          (len(response['data']), limit, kwargs.get('after')))
+                for resource in response['data']:
+
+                    if resource['type'] == reaction_type.upper():
+                        try:
+                            user = get_or_create_from_small_resource(resource)
+                            ids += [user.pk]
+                        except UnknownResourceType:
+                            continue
+
+            return User.objects.filter(pk__in=ids), response
+
+        count_method = getattr(self, 'update_count_and_get_%s_users' % reaction_type.lower())
+        fetch = fetch_all(return_all=count_method, paging_next_arg_name='after')(fetch_reaction)
+
+        return fetch(self, **kwargs)
 
 
 class ShareableModelMixin(models.Model):
