@@ -78,27 +78,30 @@ class ActionableModelMixin(models.Model):
 
 
 class LikableModelMixin(models.Model):
+    # without "Like": it may broke something
+    reaction_types = ['love', 'wow', 'haha', 'sad', 'angry', 'thankful']
+
+    def update_count_and_get_users_builder(reaction):
+
+        def update_count_and_get_reaction_users(self, instances, *args, **kwargs):
+            setattr(self, '{0}s_users'.format(reaction), instances)
+            setattr(self, '{0}s_count'.format(reaction), instances)
+
+            self.save()
+            return instances
+
+        return update_count_and_get_reaction_users
+
+    for reaction in reaction_types:
+        related_name = '%s_' % reaction + '%(class)ss'
+        vars()['{0}s_users'.format(reaction)] = ManyToManyHistoryField(User, related_name=related_name)
+        vars()['{0}s_count'.format(reaction)] = models.PositiveIntegerField(null=True, help_text='The number of likes of this item')
+
+        vars()['update_count_and_get_{0}_users'.format(reaction)] = update_count_and_get_users_builder(reaction=reaction)
 
     likes_users = ManyToManyHistoryField(User, related_name='like_%(class)ss')
     likes_count = models.PositiveIntegerField(null=True, help_text='The number of likes of this item')
 
-    loves_users = ManyToManyHistoryField(User, related_name='love_%(class)ss')
-    loves_count = models.PositiveIntegerField(null=True, help_text='The number of loves of this item')
-
-    wows_users = ManyToManyHistoryField(User, related_name='wow_%(class)ss')
-    wows_count = models.PositiveIntegerField(null=True, help_text='The number of wows of this item')
-
-    hahas_users = ManyToManyHistoryField(User, related_name='haha_%(class)ss')
-    hahas_count = models.PositiveIntegerField(null=True, help_text='The number of hahas of this item')
-
-    sads_users = ManyToManyHistoryField(User, related_name='sad_%(class)ss')
-    sads_count = models.PositiveIntegerField(null=True, help_text='The number of sads of this item')
-
-    angrys_users = ManyToManyHistoryField(User, related_name='angry_%(class)ss')
-    angrys_count = models.PositiveIntegerField(null=True, help_text='The number of angrys of this item')
-
-    thankfuls_users = ManyToManyHistoryField(User, related_name='thankful_%(class)ss')
-    thankfuls_count = models.PositiveIntegerField(null=True, help_text='The number of thankfuls of this item')
 
     class Meta:
         abstract = True
@@ -107,71 +110,15 @@ class LikableModelMixin(models.Model):
         if 'like_count' in response:
             response['likes_count'] = response.pop('like_count')
 
-        if 'love_count' in response:
-            response['loves_count'] = response.pop('love_count')
-
-        if 'wow_count' in response:
-            response['wows_count'] = response.pop('wow_count')
-
-        if 'haha_count' in response:
-            response['hahas_count'] = response.pop('haha_count')
-
-        if 'sad_count' in response:
-            response['sads_count'] = response.pop('sad_count')
-
-        if 'angry_count' in response:
-            response['angrys_count'] = response.pop('angry_count')
-
-        if 'thankful_count' in response:
-            response['thankfuls_count'] = response.pop('thankful_count')
+        for reaction in self.reaction_types:
+            if '{0}_count'.format(reaction) in response:
+                response['{0}s_count'.format(reaction)] = response.pop('{0}_count'.format(reaction))
 
         super(LikableModelMixin, self).parse(response)
 
     def update_count_and_get_like_users(self, instances, *args, **kwargs):
         self.likes_users = instances
         self.likes_count = instances.count()
-
-        self.save()
-        return instances
-
-    def update_count_and_get_love_users(self, instances, *args, **kwargs):
-        self.loves_users = instances
-        self.loves_count = instances.count()
-
-        self.save()
-        return instances
-
-    def update_count_and_get_wow_users(self, instances, *args, **kwargs):
-        self.wows_users = instances
-        self.wows_count = instances.count()
-
-        self.save()
-        return instances
-
-    def update_count_and_get_haha_users(self, instances, *args, **kwargs):
-        self.hahas_users = instances
-        self.hahas_count = instances.count()
-
-        self.save()
-        return instances
-
-    def update_count_and_get_sad_users(self, instances, *args, **kwargs):
-        self.sads_users = instances
-        self.sads_count = instances.count()
-
-        self.save()
-        return instances
-
-    def update_count_and_get_angry_users(self, instances, *args, **kwargs):
-        self.angrys_users = instances
-        self.angrys_count = instances.count()
-
-        self.save()
-        return instances
-
-    def update_count_and_get_thankful_users(self, instances, *args, **kwargs):
-        self.thankfuls_users = instances
-        self.thankfuls_count = instances.count()
 
         self.save()
         return instances
@@ -200,20 +147,26 @@ class LikableModelMixin(models.Model):
 
         return User.objects.filter(pk__in=ids), response
 
-    def fetch_reactions(self, limit=1000, **kwargs):
+    def fetch_reactions(self, reaction=None, limit=1000, **kwargs):
         """
         Retrieve and save all reactions of post
+
+        Note: method may return different data structures:
+            List:       if reaction is specified
+            Dictionary: if reaction is not specified
         """
         ids = {}
         types = ['LIKE', 'LOVE', 'WOW', 'HAHA', 'SAD', 'ANGRY', 'THANKFUL']
         for id_type in types:
-            ids[id_type] = []
+            ids[id_type.upper()] = []
 
         response = api_call('%s/reactions' % self.graph_id, limit=limit, **kwargs)
         if response:
             log.debug('response objects count=%s, limit=%s, after=%s' %
                       (len(response['data']), limit, kwargs.get('after')))
             for resource in response['data']:
+                if (reaction != None) and (reaction.upper() != resource['type']):
+                    continue
                 try:
                     user = get_or_create_from_small_resource(resource)
                     ids[resource['type']] += [user.pk]
@@ -225,42 +178,19 @@ class LikableModelMixin(models.Model):
             return User.objects.filter(pk__in=ids), response
 
         result = {}
-
         for id_type in types:
+            if (reaction != None) and (reaction.upper() != id_type.upper()):
+                continue
+
             count_method = getattr(self, 'update_count_and_get_%s_users' % id_type.lower())
+            # create count-and-get function wrapped in fetch_all decorator
             fetch = fetch_all(return_all=count_method, paging_next_arg_name='after')(get_user_ids)
+            result[id_type.upper()] = fetch(self, ids[id_type.upper()], response, **kwargs)
 
-            result[id_type] = fetch(self, ids[id_type], response)
-
-        return result
-
-
-    def fetch_reactions_by_type(self, reaction_type='like', version=2.6, **kwargs):
-
-        def fetch_reaction(self, limit=1000, **kwargs):
-            """
-            Retrieve and save all reactions of post
-            """
-            ids = []
-            response = api_call('%s/reactions' % self.graph_id, limit=limit, **kwargs)
-            if response:
-                log.debug('response objects count=%s, limit=%s, after=%s' %
-                          (len(response['data']), limit, kwargs.get('after')))
-                for resource in response['data']:
-
-                    if resource['type'] == reaction_type.upper():
-                        try:
-                            user = get_or_create_from_small_resource(resource)
-                            ids += [user.pk]
-                        except UnknownResourceType:
-                            continue
-
-            return User.objects.filter(pk__in=ids), response
-
-        count_method = getattr(self, 'update_count_and_get_%s_users' % reaction_type.lower())
-        fetch = fetch_all(return_all=count_method, paging_next_arg_name='after')(fetch_reaction)
-
-        return fetch(self, **kwargs)
+        if (reaction != None):
+            return result[reaction.upper()]
+        else:
+            return result
 
 
 class ShareableModelMixin(models.Model):
