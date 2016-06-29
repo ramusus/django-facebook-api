@@ -165,14 +165,19 @@ class LikableModelMixin(models.Model):
             log.debug('response objects count=%s, limit=%s, after=%s' %
                       (len(response['data']), limit, kwargs.get('after')))
             for resource in response['data']:
-                if (reaction != None) and (reaction.upper() != resource['type']):
-                    continue
                 try:
-                    user = get_or_create_from_small_resource(resource)
-                    ids[resource['type']] += [user.pk]
+                    if (reaction != None) and (reaction.upper() != resource['type']):
+                        continue
+                    try:
+                        user = get_or_create_from_small_resource(resource)
+                        ids[resource['type']] += [user.pk]
 
-                except UnknownResourceType:
+                    except UnknownResourceType:
+                        continue
+                # no 'type' in resource
+                except KeyError:
                     continue
+
 
         def get_user_ids(self, ids, response):
             return User.objects.filter(pk__in=ids), response
