@@ -156,7 +156,7 @@ class LikableModelMixin(models.Model):
             Dictionary: if reaction is not specified
         """
         ids = {}
-        types = ['LIKE', 'LOVE', 'WOW', 'HAHA', 'SAD', 'ANGRY', 'THANKFUL']
+        types = self.reaction_types + ['LIKE']
         for id_type in types:
             ids[id_type.upper()] = []
 
