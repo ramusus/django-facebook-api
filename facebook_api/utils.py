@@ -47,8 +47,10 @@ def get_or_create_from_small_resource(resource):
     elif keys == ['id', 'name', 'namespace']:
         # resource is a application
         return Application.objects.get_or_create(graph_id=resource['id'], defaults=defaults)[0]
-    elif keys == ['id', 'name'] or keys == ['id']:
+    elif keys == ['id', 'name'] or keys == ['id'] or keys == ['id', 'name', 'type']:
         # resource is a user
+        if 'type' in defaults:
+            del defaults['type']
         return User.objects.get_or_create(graph_id=resource['id'], defaults=defaults)[0]
     else:
         raise UnknownResourceType("Strange structure of resource: %s" % resource)
