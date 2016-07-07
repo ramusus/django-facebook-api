@@ -78,30 +78,8 @@ class ActionableModelMixin(models.Model):
 
 
 class LikableModelMixin(models.Model):
-    # without "Like": it may broke something
-    reaction_types = ['love', 'wow', 'haha', 'sad', 'angry', 'thankful']
-
-    def update_count_and_get_users_builder(reaction):
-
-        def update_count_and_get_reaction_users(self, instances, *args, **kwargs):
-            setattr(self, '{0}s_users'.format(reaction), instances)
-            setattr(self, '{0}s_count'.format(reaction), instances)
-
-            self.save()
-            return instances
-
-        return update_count_and_get_reaction_users
-
-    for reaction in reaction_types:
-        related_name = '%s_' % reaction + '%(class)ss'
-        vars()['{0}s_users'.format(reaction)] = ManyToManyHistoryField(User, related_name=related_name)
-        vars()['{0}s_count'.format(reaction)] = models.PositiveIntegerField(null=True, help_text='The number of likes of this item')
-
-        vars()['update_count_and_get_{0}_users'.format(reaction)] = update_count_and_get_users_builder(reaction=reaction)
-
     likes_users = ManyToManyHistoryField(User, related_name='like_%(class)ss')
     likes_count = models.PositiveIntegerField(null=True, help_text='The number of likes of this item')
-
 
     class Meta:
         abstract = True
@@ -109,10 +87,6 @@ class LikableModelMixin(models.Model):
     def parse(self, response):
         if 'like_count' in response:
             response['likes_count'] = response.pop('like_count')
-
-        for reaction in self.reaction_types:
-            if '{0}_count'.format(reaction) in response:
-                response['{0}s_count'.format(reaction)] = response.pop('{0}_count'.format(reaction))
 
         super(LikableModelMixin, self).parse(response)
 
@@ -147,6 +121,44 @@ class LikableModelMixin(models.Model):
 
         return User.objects.filter(pk__in=ids), response
 
+
+class ReactionableModelMixin(models.Model):
+    # without "Like": it may broke something
+    reaction_types = ['love', 'wow', 'haha', 'sad', 'angry', 'thankful']
+
+    reactions_count = models.PositiveIntegerField(null=True, help_text='The number of reactions of this item')
+
+    def update_count_and_get_users_builder(reaction):
+
+        def update_count_and_get_reaction_users(self, instances, *args, **kwargs):
+            # setattr(self, '{0}s_count'.format(reaction), 0)
+            setattr(self, '{0}s_users'.format(reaction), instances)
+            setattr(self, '{0}s_count'.format(reaction), instances.count())
+
+            self.save()
+            return instances
+
+        return update_count_and_get_reaction_users
+
+    for reaction in reaction_types:
+        related_name = '%s_' % reaction + '%(class)ss'
+        vars()['{0}s_users'.format(reaction)] = ManyToManyHistoryField(User, related_name=related_name)
+        vars()['{0}s_count'.format(reaction)] = models.PositiveIntegerField(null=True, help_text='The number of {0}s of this item'.format(reaction))
+
+        vars()['update_count_and_get_{0}_users'.format(reaction)] = update_count_and_get_users_builder(reaction=reaction)
+
+
+    class Meta:
+        abstract = True
+
+    def parse(self, response):
+        for reaction in self.reaction_types:
+            if '{0}_count'.format(reaction) in response:
+                response['{0}s_count'.format(reaction)] = response.pop('{0}_count'.format(reaction))
+
+        super(ReactionableModelMixin, self).parse(response)
+
+
     def fetch_reactions(self, reaction=None, limit=1000, **kwargs):
         """
         Retrieve and save all reactions of post
@@ -160,7 +172,7 @@ class LikableModelMixin(models.Model):
         for id_type in types:
             ids[id_type.upper()] = []
 
-        response = api_call('%s/reactions' % self.graph_id, limit=limit, **kwargs)
+        response = api_call('%s/reactions' % self.graph_id, version=2.6, limit=limit, **kwargs)
         if response:
             log.debug('response objects count=%s, limit=%s, after=%s' %
                       (len(response['data']), limit, kwargs.get('after')))
@@ -187,15 +199,27 @@ class LikableModelMixin(models.Model):
             if (reaction != None) and (reaction.upper() != id_type.upper()):
                 continue
 
-            count_method = getattr(self, 'update_count_and_get_%s_users' % id_type.lower())
+            count_method = getattr(self, 'update_count_and_get_{0}_users'.format(id_type.lower()))
             # create count-and-get function wrapped in fetch_all decorator
             fetch = fetch_all(return_all=count_method, paging_next_arg_name='after')(get_user_ids)
-            result[id_type.upper()] = fetch(self, ids[id_type.upper()], response, **kwargs)
+            result[id_type.upper()] = fetch(self, ids[id_type.upper()], response)
+            # for some reason fetch_all does not call count method
+            count_method(result[id_type.upper()])
 
         if (reaction != None):
             return result[reaction.upper()]
         else:
             return result
+
+    # separate from fetch method, because it would return wrong data if reaction specified
+    def count_reactions(self):
+        count = 0
+        for reaction in self.reaction_types + ['like']:
+            count += getattr(self, '{0}s_count'.format(reaction))
+
+        self.reactions_count = count
+
+        self.save()
 
 
 class ShareableModelMixin(models.Model):
