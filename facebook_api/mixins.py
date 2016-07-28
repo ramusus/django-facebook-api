@@ -250,8 +250,8 @@ class ShareableModelMixin(models.Model):
 
         response = api_call('%s/sharedposts' % self.graph_id, **kwargs)
         if response:
-            timestamps = dict(
-                [(int(post['from']['id']), datetime_parse(post['created_time'])) for post in response['data']])
+            posts = [post for post in response['data'] if post.get('from')]
+            timestamps = dict([(int(post['from']['id']), datetime_parse(post['created_time'])) for post in posts])
             ids_new = timestamps.keys()
             # becouse we should use local pk, instead of remote, remove it after pk -> graph_id
             ids_current = map(int, User.objects.filter(pk__in=self.shares_users.get_query_set(
@@ -260,9 +260,8 @@ class ShareableModelMixin(models.Model):
             ids_add_pairs = []
             ids_remove = set(ids_current).difference(set(ids_new))
 
-            log.debug('response objects count=%s, limit=%s, after=%s' %
-                      (len(response['data']), limit, kwargs.get('after')))
-            for post in response['data']:
+            log.debug('response objects count=%s, limit=%s, after=%s' % (len(posts), limit, kwargs.get('after')))
+            for post in posts:
                 graph_id = int(post['from']['id'])
                 if sorted(post['from'].keys()) == ['id', 'name']:
                     try:
