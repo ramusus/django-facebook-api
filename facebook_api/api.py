@@ -19,17 +19,6 @@ from social_api.api import ApiAbstractBase, Singleton
 __all__ = ['api_call', 'FacebookError']
 
 
-@property
-def code(self):
-    try:
-        return self.result['error']['code']
-    except (KeyError, TypeError):
-        return self.type
-
-
-FacebookError.code = code
-
-
 class FacebookApi(ApiAbstractBase):
     __metaclass__ = Singleton
 
